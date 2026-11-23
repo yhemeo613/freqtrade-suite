@@ -413,9 +413,12 @@ class Telegram(RPCHandler):
         ]
         return callbacks
 
-    def _mark_update_seen(self, update: Update, context: CallbackContext = None) -> None:
+    async def _mark_update_seen(self, update: Update, context: CallbackContext = None) -> None:
         """
         ft-selfheal: called for every received update; tracks freshness of the poller.
+
+        注意：python-telegram-bot 要求回调必须是协程（async），
+        同步函数会被 await 触发 `TypeError: 'NoneType' object can't be awaited`。
         """
         self._last_update_ts = time.time()
         if update.update_id:

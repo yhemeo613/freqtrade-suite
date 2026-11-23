@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections import deque
 from copy import deepcopy
 from functools import partial
 from threading import Event, RLock, Thread
@@ -23,6 +24,11 @@ class ExchangeWS:
     ob_timeout = 60  # 1m
     # Timeout for the get orderbook snapshot round trip to the websocket thread.
     ob_snapshot_timeout = 1.0
+    # 交易所 WS 订阅配额：OKX 官方限制每连接 subscribe+unsubscribe+login 共 480 次/小时。
+    # 超出配额时跳过订阅，上层 get_ohlcv 会自动回退 REST（REST 侧由 ccxt rateLimit 限流）。
+    ws_sub_limit_per_hour = 480
+    # 交易所 WS 写入频率：OKX 约 3 条消息/秒 → 订阅请求至少间隔 0.34s
+    ws_sub_min_interval = 0.34
 
     def __init__(
         self, config: Config, ccxt_object: ccxt.Exchange, orderbook_depth: int | None = None
@@ -34,6 +40,11 @@ class ExchangeWS:
         self._state_lock = RLock()
         self._loop_ready = Event()
         self._stopping = False
+
+        # WS 订阅限流状态（OKX 480 次/小时 + 3 条/秒）
+        self._ws_sub_lock = RLock()
+        self._ws_sub_history: deque[float] = deque()
+        self._ws_rate_limited_until = 0.0
 
         self._klines_watching: set[PairWithTimeframe] = set()
         self._klines_scheduled: set[PairWithTimeframe] = set()
@@ -190,6 +201,26 @@ class ExchangeWS:
                     logger.info(f"Removing {pair} from orderbook watchlist")
                     self._ob_watching.discard(pair)
 
+    def _reserve_ws_subscription(self) -> bool:
+        """
+        在 WS 订阅配额内预留一次订阅/取消订阅请求。
+
+        OKX 官方限制：每个连接 subscribe/unsubscribe/login 合计 480 次/小时；
+        超出时返回 False，调用方跳过本次订阅（上层 get_ohlcv 自动回退 REST），
+        避免触发 60014 "Requests too frequent" 并产生重连风暴。
+        """
+        now = dt_ts() / 1000
+        with self._ws_sub_lock:
+            if now < self._ws_rate_limited_until:
+                return False
+            cutoff = now - 3600
+            while self._ws_sub_history and self._ws_sub_history[0] < cutoff:
+                self._ws_sub_history.popleft()
+            if len(self._ws_sub_history) >= self.ws_sub_limit_per_hour:
+                return False
+            self._ws_sub_history.append(now)
+            return True
+
     async def _schedule_while_true(self) -> None:
         # For the ones we should be watching
         with self._state_lock:
@@ -199,6 +230,12 @@ class ExchangeWS:
             # Check if they're already scheduled
             with self._state_lock:
                 if p in self._klines_scheduled:
+                    continue
+                if not self._reserve_ws_subscription():
+                    # 订阅配额已用尽：不标记 scheduled，后续周期再尝试；本次由 REST 兜底
+                    logger.debug(
+                        "WS 订阅配额已用尽，跳过 %s %s %s", p[0], p[1], p[2]
+                    )
                     continue
                 self._klines_scheduled.add(p)
             pair, timeframe, candle_type = p
@@ -215,6 +252,7 @@ class ExchangeWS:
                     candle_type=candle_type,
                 )
             )
+            await asyncio.sleep(self.ws_sub_min_interval)
 
         with self._state_lock:
             ob_pairs_to_check = list(self._ob_watching)
@@ -224,11 +262,14 @@ class ExchangeWS:
             with self._state_lock:
                 if ob_pair in self._ob_scheduled:
                     continue
+                if not self._reserve_ws_subscription():
+                    continue
                 self._ob_scheduled.add(ob_pair)
             ob_task = asyncio.create_task(self._continuously_async_watch_orderbook(ob_pair))
             with self._state_lock:
                 self._background_tasks.add(ob_task)
             ob_task.add_done_callback(partial(self._orderbook_stopped, pair=ob_pair))
+            await asyncio.sleep(self.ws_sub_min_interval)
 
     def _orderbook_stopped(self, task: asyncio.Task, pair: str) -> None:
         with self._state_lock:
@@ -377,6 +418,13 @@ class ExchangeWS:
                 )
         except ccxt.ExchangeClosedByUser:
             logger.debug("Exchange connection closed by user")
+        except ccxt.RateLimitExceeded:
+            # 订阅请求触发交易所限流（OKX 60014）：进入冷却期，暂停后续订阅，数据回退 REST
+            logger.warning(
+                f"WS 订阅触发交易所限流（{pair}, {timeframe}），暂停订阅 60 秒并使用 REST 数据"
+            )
+            with self._ws_sub_lock:
+                self._ws_rate_limited_until = dt_ts() / 1000 + 60
         except ccxt.BaseError:
             logger.exception(f"Exception in continuously_async_watch_ohlcv for {pair}, {timeframe}")
         finally:

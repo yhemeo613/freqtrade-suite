@@ -60,6 +60,10 @@ python scripts/smoke_test.py
 9. **GitHub 网络代理**:本机通过 `http://127.0.0.1:7890` 访问 GitHub。git 已全局配置
    github.com 专用代理(`http.https://github.com.proxy`);`gh` CLI 命令需先在会话中设置
    `$env:HTTPS_PROXY = "http://127.0.0.1:7890"`(及 `$env:HTTP_PROXY`),否则可能连接超时。
+10. **分支保护**:`main` 与 `develop` 已开启保护——必须走 PR 合并且 CI 两项检查
+    (`前端(typecheck / lint / test / build)`、`服务端(Python 语法 / Compose / 配置模板校验)`)
+    通过后才能合并;禁止 force-push、禁止删除分支。合并前先 `gh pr checks <num>` 等待检查完成,
+    不要创建 PR 后立即合并。
 
 
 ## 6. 每轮周期(每日定时任务)流程
@@ -68,6 +72,6 @@ python scripts/smoke_test.py
 2. 检查 GitHub 上未合并的 PR,可验证的先收尾(验证 → 合并)。
 3. 审查最新代码,找出可落地的改进(缺陷 / 性能 / 视图 / 架构 / 文档 / CI)。
 4. 按主题拆 `feature` 分支 → 实现 → 本地验证 → `gh pr create --base develop`。
-5. CI 通过(或本地验证充分)后 `gh pr merge --squash --delete-branch`。
+5. 等待 CI 两项检查通过(`gh pr checks <num>`),再 `gh pr merge --squash --delete-branch`。
 6. 当 `develop` 相对最近 tag 积累足够变更时,执行发布流程(见 DEVELOPMENT_WORKFLOW.md)。
 7. 汇报本轮中文摘要:审查结论、PR 清单、验证结果、发布/tag 信息、下一步建议。
