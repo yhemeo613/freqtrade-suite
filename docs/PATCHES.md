@@ -29,7 +29,8 @@
 
 | 文件 | 补丁 | 说明 |
 |---|---|---|
-| `freqtrade/rpc/telegram.py` | `ft-selfheal` 轮询看门狗 | 重建 Application、滑动窗口重启预算（8 次 / 30 分钟）。可通过 `telegram.selfheal: false` 关闭（默认开启），与纯文案翻译分离；关闭后也不再有额外的健康检查 API 调用 |
+| `freqtrade/rpc/telegram.py` | `ft-selfheal` 轮询看门狗 | 重建 Application、滑动窗口重启预算（8 次 / 30 分钟）。可通过 `telegram.selfheal: false` 关闭（默认开启），与纯文案翻译分离；关闭后也不再有额外的健康检查 API 调用。`_mark_update_seen` 必须为协程（async），否则每条消息触发 `TypeError: 'NoneType' object can't be awaited` |
+| `freqtrade/exchange/exchange_ws.py` | WS 订阅限流合规 | 订阅请求按交易所配额节流：480 次/小时（OKX subscribe+unsubscribe+login 限制）+ 3 条/秒写入间隔 + 限流退避 60s；超配额通道不订阅、自动由 REST 兜底，避免 `60014 Requests too frequent` 错误风暴 |
 | `freqtrade/configuration/config_validation.py` | 占位符凭据 fail-fast | 拒绝 `jwt_secret_key` / `password` 含「请替换」的模板占位符配置，防止以"已知密钥 + 已知口令"运行 API |
 
 ## 三、升级 freqtrade 时的重放步骤
@@ -43,5 +44,5 @@
 
 ## 四、其它
 
-- `frontend-server/Dockerfile` 为运行基座参考说明，**compose 实际使用官方 stable 镜像 + 源码挂载**，不参与构建（如需统一依赖来源可切换为本地构建）。
-- 依赖一致性：运行时代码来自本地挂载源码，第三方依赖来自官方镜像 site-packages；升级镜像与升级本地 `requirements.txt` 应同步进行。
+- 后端镜像：`Dockerfile.freqtrade` 基于固定 digest 的官方 stable 镜像，额外安装第三方策略依赖（`ta` / `finta` / `scikit-optimize`）；compose 中的 ft-trade / ft-ws 均使用该自定义镜像 `freqtrade-custom:local`，源码仍以只读方式挂载。
+- 依赖一致性：运行时代码来自本地挂载源码，第三方依赖来自官方镜像 site-packages + 自定义镜像追加依赖；升级镜像与升级本地 `requirements.txt` 应同步进行。

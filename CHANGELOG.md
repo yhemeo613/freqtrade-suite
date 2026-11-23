@@ -2,6 +2,25 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有显著变更都会记录在此文件中。
 
+## [v1.0.1] - 2026-11-23
+
+### 修复
+
+- **Telegram 自愈补丁**：`_mark_update_seen` 改为协程。原同步函数被 python-telegram-bot await，导致每条消息触发 `TypeError: 'NoneType' object can't be awaited` 并刷 ERROR 日志
+- **OKX WebSocket 限流合规**：`exchange_ws.py` 增加订阅配额（480 次/小时，含订阅/退订）与 3 条/秒节流、限流退避；超配额通道自动回退 REST，消除 `60014 Requests too frequent` 错误风暴（此前 3 分钟 2750 条错误）
+- **REST 限流**：默认配置增加 `exchange.ccxt_config: {"enableRateLimit": true, "rateLimit": 200}`，遵守 OKX REST 请求频率
+
+## [v1.0.0] - 2026-11-23
+
+### 首个开源版本
+
+- **GitFlow + PR 驱动**：`main` / `develop` / `release/*` / `hotfix/*`，GitHub Actions 双检查（前端 typecheck/lint/test/build + 服务端语法/编排校验），分支保护已启用
+- **服务端中文化**：日志、CLI、Telegram/RPC 文案翻译 + `ft-selfheal` 轮询自愈看门狗
+- **自定义后端镜像**：`Dockerfile.freqtrade` 基于固定 digest 的官方 stable 镜像，内置 `ta` / `finta` / `scikit-optimize` 策略依赖
+- **策略库**：47 个策略文件 / 46 个策略类，含 NFI X8 主力策略；无上游 LICENSE 的 8 个策略不随仓库分发，可用 `scripts/fetch_optional_strategies.py` 按需获取
+- **默认配置**：OKX 永续合约模拟盘（10000 USDT / 最多 3 仓 / 110 个主流与山寨标的）
+- **开源合规**：GPL-3.0 LICENSE、敏感信息审计（`docs/OPEN_SOURCE.md`）、内网信息清理、Secret Scanning 开启
+
 ## [v0.5.1] - 2026-11-23
 
 ### 修复
@@ -139,6 +158,8 @@
 - 107 个组件从 `cn` 包迁移到本地 `@/lib/utils`，卸载 `cn` 依赖(#9)
 - Nginx gzip 压缩 + 静态资源 30 天缓存；Telegram 周期统计文案拼接修复
 
+[v1.0.1]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.1
+[v1.0.0]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.0
 [v0.5.1]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v0.5.1
 [v0.5.0]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v0.5.0
 [v0.4.2]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v0.4.2

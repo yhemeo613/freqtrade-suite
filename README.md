@@ -212,6 +212,8 @@ docker compose up -d --build
 | `trading_mode` / `margin_mode` | 交易模式，默认 `futures`（永续合约）/ `isolated`（逐仓） |
 | `exchange.pair_whitelist` | 交易标的，默认 110 个 OKX USDT 永续（主流 + 主流山寨，均要求上市满 90 天） |
 | `exchange.name` | 默认 `okx`，可替换为 freqtrade 支持的其他交易所 |
+| `exchange.ccxt_config` | REST 限流参数，默认 `{"enableRateLimit": true, "rateLimit": 200}`（遵守交易所请求频率） |
+| `exchange.enable_ws` | WebSocket 开关（默认开启）；WS 订阅按交易所配额（OKX 480 次/小时）自动节流，超配额通道自动回退 REST |
 | `exchange.key/secret/password` | 交易所凭据；模拟盘可留空，实盘必填 |
 | `api_server.listen_port` | 交易进程 API 端口，默认 `8080`（与 compose 端口映射一致） |
 | `api_server.username/password` | Web 控制台登录凭据 |

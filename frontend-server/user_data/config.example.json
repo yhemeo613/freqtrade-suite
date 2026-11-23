@@ -45,7 +45,10 @@
     "key": "",
     "secret": "",
     "password": "",
-    "ccxt_config": {},
+    "ccxt_config": {
+      "enableRateLimit": true,
+      "rateLimit": 200
+    },
     "ccxt_async_config": {},
     "pair_whitelist": [
       "BTC/USDT:USDT",
