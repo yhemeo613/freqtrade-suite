@@ -1,0 +1,72 @@
+---
+# 整套服务统一编排：
+#   ft-web（Nginx：静态页面 + /api 同源分流）→ ft-trade（交易进程 8080）
+#                                              → ft-ws  （webserver 8081）
+# 启动：docker compose up -d --build
+# 停止：docker compose down
+name: freqtrade-suite
+
+x-healthcheck-base: &healthcheck-base
+  interval: 30s
+  timeout: 10s
+  retries: 5
+  start_period: 20s
+
+services:
+  freqtrade:
+    # 自定义镜像：基于固定 digest 的官方 stable 镜像补齐第三方策略依赖（ta/finta/scikit-optimize）
+    # 官方基础 digest 见 Dockerfile.freqtrade；升级 freqtrade 时同时替换两处 digest
+    image: freqtrade-custom:local
+    build:
+      context: .
+      dockerfile: Dockerfile.freqtrade
+    container_name: ft-trade
+    restart: unless-stopped
+    volumes:
+      # 源码只读挂载；可写面仅限 user_data（日志 / 数据库 / 回测结果）
+      - ./frontend-server:/freqtrade:ro
+      - ./frontend-server/user_data:/freqtrade/user_data
+    ports:
+      - "127.0.0.1:8080:8080"
+    command: >
+      trade
+      --config /freqtrade/user_data/config.json
+      --strategy NostalgiaForInfinityX8
+    healthcheck:
+      # /api/v1/ping 位于 public 路由，无需认证
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/api/v1/ping', timeout=5).status == 200 else 1)"]
+      <<: *healthcheck-base
+
+  freqtrade-ws:
+    image: freqtrade-custom:local
+    build:
+      context: .
+      dockerfile: Dockerfile.freqtrade
+    container_name: ft-ws
+    restart: unless-stopped
+    volumes:
+      - ./frontend-server:/freqtrade:ro
+      - ./frontend-server/user_data:/freqtrade/user_data
+    ports:
+      - "127.0.0.1:8081:8081"
+    command: >
+      webserver
+      --config /freqtrade/user_data/config.json
+      --config /freqtrade/user_data/config_ws.json
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8081/api/v1/ping', timeout=5).status == 200 else 1)"]
+      <<: *healthcheck-base
+
+  web:
+    build:
+      context: ./frontend-web
+    image: freqtrade-web:local
+    container_name: ft-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5173:80"
+    depends_on:
+      freqtrade:
+        condition: service_healthy
+      freqtrade-ws:
+        condition: service_healthy

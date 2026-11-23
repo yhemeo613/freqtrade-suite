@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Freqtrade 控制台</title>
+        <script>
+            // 防闪暗色主题：默认暗色,优先读已保存设置(键与 settings store 统一为 ftzh.settings)
+            try {
+                var ftTheme =
+                    JSON.parse(localStorage.getItem("ftzh.settings") || "{}").theme || "dark";
+                if (ftTheme === "dark") document.documentElement.classList.add("dark");
+            } catch (e) {
+                document.documentElement.classList.add("dark");
+            }
+        </script>
+    </head>
+    <body>
+        <div id="app"></div>
+        <script type="module" src="/src/main.ts"></script>
+    </body>
+</html>

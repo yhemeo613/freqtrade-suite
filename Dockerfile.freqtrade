@@ -1,0 +1,12 @@
+# 后端自定义镜像:在固定 digest 的官方 freqtrade 镜像上补齐第三方策略依赖
+# 基础镜像与 docker-compose 中锁定的一致（升级 freqtrade 时同步替换 digest）
+FROM freqtradeorg/freqtrade@sha256:bd52747f04d0472ea326480e4800dbaf9dda0313b04e511fe518d04e108c817b
+
+# 第三方技术指标/优化库：部分社区策略依赖
+#   - ta        : GodStra / Heracles
+#   - finta     : CryptoFrog
+#   - scikit-optimize (skopt): CryptoFrog
+RUN pip install --no-cache-dir \
+        "ta==0.11.0" \
+        "finta==1.3" \
+        "scikit-optimize==0.10.2"

@@ -1,0 +1,455 @@
+{
+  "generated_by": "dsh",
+  "freqtrade": "2026.10",
+  "strategies": [
+    {
+      "file": "Diamond.py",
+      "classes": [
+        "Diamond"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\Diamond.py"
+    },
+    {
+      "file": "Supertrend.py",
+      "classes": [
+        "Supertrend"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\Supertrend.py"
+    },
+    {
+      "file": "Bandtastic.py",
+      "classes": [
+        "Bandtastic"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\Bandtastic.py"
+    },
+    {
+      "file": "MultiMa.py",
+      "classes": [
+        "MultiMa"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\MultiMa.py"
+    },
+    {
+      "file": "PowerTower.py",
+      "classes": [
+        "PowerTower"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\PowerTower.py"
+    },
+    {
+      "file": "SwingHighToSky.py",
+      "classes": [
+        "SwingHighToSky"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\SwingHighToSky.py"
+    },
+    {
+      "file": "mabStra.py",
+      "classes": [
+        "mabStra"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\mabStra.py"
+    },
+    {
+      "file": "hlhb.py",
+      "classes": [
+        "hlhb"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\hlhb.py"
+    },
+    {
+      "file": "UniversalMACD.py",
+      "classes": [
+        "UniversalMACD"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\UniversalMACD.py"
+    },
+    {
+      "file": "TrendRiderStrategy.py",
+      "classes": [
+        "TrendRiderStrategy"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\TrendRiderStrategy.py"
+    },
+    {
+      "file": "Strategy001.py",
+      "classes": [
+        "Strategy001"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\Strategy001.py"
+    },
+    {
+      "file": "Strategy002.py",
+      "classes": [
+        "Strategy002"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\Strategy002.py"
+    },
+    {
+      "file": "Strategy003.py",
+      "classes": [
+        "Strategy003"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\Strategy003.py"
+    },
+    {
+      "file": "Strategy004.py",
+      "classes": [
+        "Strategy004"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\Strategy004.py"
+    },
+    {
+      "file": "Strategy005.py",
+      "classes": [
+        "Strategy005"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\Strategy005.py"
+    },
+    {
+      "file": "Strategy001_custom_exit.py",
+      "classes": [
+        "Strategy001_custom_exit"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\Strategy001_custom_exit.py"
+    },
+    {
+      "file": "TWAPStrategy.py",
+      "classes": [
+        "TWAPStrategy"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\TWAPStrategy.py"
+    },
+    {
+      "file": "AlmgrenChrissStrategy.py",
+      "classes": [
+        "AlmgrenChrissStrategy"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\AlmgrenChrissStrategy.py"
+    },
+    {
+      "file": "CustomStoplossWithPSAR.py",
+      "classes": [
+        "CustomStoplossWithPSAR"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\CustomStoplossWithPSAR.py"
+    },
+    {
+      "file": "FixedRiskRewardLoss.py",
+      "classes": [
+        "FixedRiskRewardLoss"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\FixedRiskRewardLoss.py"
+    },
+    {
+      "file": "BreakEven.py",
+      "classes": [
+        "BreakEven"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\BreakEven.py"
+    },
+    {
+      "file": "HourBasedStrategy.py",
+      "classes": [
+        "HourBasedStrategy"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\HourBasedStrategy.py"
+    },
+    {
+      "file": "InformativeSample.py",
+      "classes": [
+        "InformativeSample"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\InformativeSample.py"
+    },
+    {
+      "file": "multi_tf.py",
+      "classes": [
+        "multi_tf"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\multi_tf.py"
+    },
+    {
+      "file": "PatternRecognition.py",
+      "classes": [
+        "PatternRecognition"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\PatternRecognition.py"
+    },
+    {
+      "file": "CombinedBinHAndCluc.py",
+      "classes": [
+        "CombinedBinHAndCluc"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\berlinguyinca\\CombinedBinHAndCluc.py"
+    },
+    {
+      "file": "ClucMay72018.py",
+      "classes": [
+        "ClucMay72018"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\berlinguyinca\\ClucMay72018.py"
+    },
+    {
+      "file": "CMCWinner.py",
+      "classes": [
+        "CMCWinner"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\berlinguyinca\\CMCWinner.py"
+    },
+    {
+      "file": "BinHV27.py",
+      "classes": [
+        "BinHV27"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\berlinguyinca\\BinHV27.py"
+    },
+    {
+      "file": "BinHV45.py",
+      "classes": [
+        "BinHV45"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\berlinguyinca\\BinHV45.py"
+    },
+    {
+      "file": "SmoothOperator.py",
+      "classes": [
+        "SmoothOperator"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\berlinguyinca\\SmoothOperator.py"
+    },
+    {
+      "file": "Quickie.py",
+      "classes": [
+        "Quickie"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\berlinguyinca\\Quickie.py"
+    },
+    {
+      "file": "BB_RPB_TSL.py",
+      "classes": [
+        "BB_RPB_TSL"
+      ],
+      "repo": "jilv220/BB_RPB_TSL",
+      "commit": "33f8359",
+      "license": "GPL-3.0",
+      "source_path": "BB_RPB_TSL\\BB_RPB_TSL.py"
+    },
+    {
+      "file": "DcaTp.py",
+      "classes": [
+        "DcaTp"
+      ],
+      "repo": "typhonun/DcaTpStrategy",
+      "commit": "057525d",
+      "license": "MIT",
+      "source_path": "DcaTpStrategy\\user_data\\strategies\\DcaTp.py"
+    },
+    {
+      "file": "GodStra.py",
+      "classes": [
+        "GodStra"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\GodStra.py"
+    },
+    {
+      "file": "Heracles.py",
+      "classes": [
+        "Heracles"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\Heracles.py"
+    },
+    {
+      "file": "CryptoFrog.py",
+      "classes": [
+        "CryptoFrog"
+      ],
+      "repo": "froggleston/cryptofrog-strategies",
+      "commit": "bebdf63",
+      "license": "Apache-2.0",
+      "source_path": "cryptofrog-strategies\\CryptoFrog.py"
+    },
+    {
+      "file": "custom_indicators.py",
+      "classes": [],
+      "repo": "froggleston/cryptofrog-strategies",
+      "commit": "bebdf63",
+      "license": "Apache-2.0",
+      "note": "CryptoFrog 辅助模块（非策略类）",
+      "source_path": "cryptofrog-strategies\\custom_indicators.py"
+    },
+    {
+      "file": "FAdxSmaStrategy.py",
+      "classes": [
+        "FAdxSmaStrategy"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\futures\\FAdxSmaStrategy.py"
+    },
+    {
+      "file": "FOttStrategy.py",
+      "classes": [
+        "FOttStrategy"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\futures\\FOttStrategy.py"
+    },
+    {
+      "file": "FReinforcedStrategy.py",
+      "classes": [
+        "FReinforcedStrategy"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\futures\\FReinforcedStrategy.py"
+    },
+    {
+      "file": "FSampleStrategy.py",
+      "classes": [
+        "FSampleStrategy"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\futures\\FSampleStrategy.py"
+    },
+    {
+      "file": "FSupertrendStrategy.py",
+      "classes": [
+        "FSupertrendStrategy"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\futures\\FSupertrendStrategy.py"
+    },
+    {
+      "file": "TrendFollowingStrategy.py",
+      "classes": [
+        "TrendFollowingStrategy"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\futures\\TrendFollowingStrategy.py"
+    },
+    {
+      "file": "VolatilitySystem.py",
+      "classes": [
+        "VolatilitySystem"
+      ],
+      "repo": "freqtrade/freqtrade-strategies",
+      "commit": "f3340ce",
+      "license": "GPL-3.0",
+      "source_path": "freqtrade-strategies\\user_data\\strategies\\futures\\VolatilitySystem.py"
+    }
+  ]
+}

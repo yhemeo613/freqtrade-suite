@@ -1,0 +1,31 @@
+# ---- 密钥与运行数据（严禁入库）----
+frontend-server/user_data/config.json
+frontend-server/*.sqlite
+frontend-server/*.sqlite-shm
+frontend-server/*.sqlite-wal
+frontend-server/user_data/*.sqlite
+frontend-server/user_data/*.sqlite-shm
+frontend-server/user_data/*.sqlite-wal
+frontend-server/user_data/backtest_results/
+frontend-server/user_data/data/
+frontend-server/user_data/hyperopt_results/
+frontend-server/user_data/logs/
+frontend-server/user_data/plot/
+frontend-server/user_data/notebooks/
+frontend-server/user_data/freqaimodels/
+frontend-server/user_data/hyperopts/
+*.log
+
+# ---- 前端依赖与构建产物 ----
+frontend-web/node_modules/
+frontend-web/dist/
+
+# ---- 工具与编辑器 ----
+__pycache__/
+*.pyc
+.zcode/
+.playwright-mcp/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
