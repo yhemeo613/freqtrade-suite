@@ -119,16 +119,20 @@ def main() -> int:
     except Exception as e:  # noqa: BLE001
         c.check("API ping 分流", False, str(e))
 
-    # 3. gzip（取页面引用的 JS 资源）
+    # 3. gzip 与静态资源缓存（取页面引用的 JS 资源）
     try:
         _, _, html = http(args.base + "/")
         m = re.search(rb'/assets/[^"\']+\.js', html)
         if not m:
             c.check("静态资源 gzip", False, "未找到 JS 资源")
+            c.check("静态资源缓存头", False, "未找到 JS 资源")
         else:
             asset = args.base + m.group(0).decode()
             _status, headers, _body = http(asset, {"Accept-Encoding": "gzip"})
             c.check("静态资源 gzip 压缩", headers.get("content-encoding") == "gzip")
+            # nginx `expires 30d` → Cache-Control: max-age=2592000
+            cache = headers.get("cache-control", "")
+            c.check("静态资源缓存头", "max-age=2592000" in cache, cache)
     except Exception as e:  # noqa: BLE001
         c.check("静态资源 gzip", False, str(e))
 

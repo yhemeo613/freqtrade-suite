@@ -8,6 +8,7 @@
 
 - **WS 订阅配额与频道上限可配置**：`exchange_ws_sub_limit_per_hour`（默认 480）与 `exchange_ws_max_channels`（默认 240）改为可从 `config.json` 覆盖，默认值与 OKX 官方限制一致、行为不变；换交易所或调整策略周期数时无需改代码（`exchange_ws.py` 增加容错读取，非法值回退默认）
 - **回测页策略改为下拉选择**：从 webserver 的 `/api/v1/strategies` 拉取可用策略列表，用可滚动下拉替代手输（NFI 等长策略名不再容易打错）；列表加载失败或当前策略不在列表时自动保留自由输入兜底
+- **冒烟测试新增静态资源缓存头检查**：`scripts/smoke_test.py` 校验 `/assets/` 响应带 `Cache-Control: max-age=2592000`（nginx `expires 30d` 生效），防止缓存配置回归
 
 ## [v1.0.4] - 2026-11-24
 
