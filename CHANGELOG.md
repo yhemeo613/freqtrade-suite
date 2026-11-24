@@ -2,6 +2,18 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有显著变更都会记录在此文件中。
 
+## [未发布]
+
+### 修复
+
+- **后台任务失败被误报为成功**：回测失败时 freqtrade 返回 `status="error"`（不是 `failed`）且 `running=false`，原逻辑用 `running === false` 判定「已完成」，导致回测失败弹「回测完成」、Recursive/Lookahead 分析失败弹「分析完成」；新增 `src/lib/jobStatus.ts` 把状态统一归类为 `idle / running / success / error`
+- **高级分析状态文案**：补上 `Analysis ended` 的中文映射（原映射匹配的是不存在的 `Analysis finished`），状态列不再直接显示英文 `ended` / `error`
+- **分析按钮卡死**：轮询连续失败停止后仍保持「分析中…」禁用态，无法重新发起
+
+### 测试
+
+- 新增 `jobStatus.ts` 14 个用例；单测总数 51 → **65**（7 文件）
+
 ## [v1.0.1] - 2026-11-23
 
 ### 修复

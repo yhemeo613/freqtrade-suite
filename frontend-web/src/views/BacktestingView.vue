@@ -23,6 +23,7 @@ import { getClient } from "@/api/client";
 import { runApi, type Trade } from "@/composables/useBotData";
 import type { BacktestResult, BacktestHistoryItem } from "@/api/types";
 import { fmtPct, fmtCoin, profitColor, exitReasonZh, directionZh, fmtDate } from "@/lib/format";
+import { classifyJob, jobErrorText } from "@/lib/jobStatus";
 
 /* ---------- 表单 ---------- */
 const strategy = ref("");
@@ -79,7 +80,16 @@ async function pollOnce(): Promise<void> {
     if (!res) return;
     progress.value = Math.round((res.progress ?? 0) * 100);
     step.value = res.step ?? "";
-    if (res.status === "ended" || res.running === false) {
+    // 失败必须单独判定：freqtrade 回测失败返回 status="error"（不是 "failed"），
+    // 且此时 running 也是 false，只按 running 判断会把失败误报成"回测完成"
+    const outcome = classifyJob(res);
+    if (outcome === "error") {
+        running.value = false;
+        stopPoll();
+        toast.error(jobErrorText(res, "回测失败"));
+        return;
+    }
+    if (outcome === "success") {
         // API 返回 {status, progress, backtest_result: {metadata, strategy, strategy_comparison}}，需下钻一层
         result.value = res.backtest_result ?? res;
         // 刚跑完的回测同样写入文件名,让"深度分析"页签立即可用
@@ -92,10 +102,6 @@ async function pollOnce(): Promise<void> {
         stopPoll();
         toast.success("回测完成");
         loadHistory();
-    } else if (res.status === "failed") {
-        running.value = false;
-        stopPoll();
-        toast.error(res.error ?? "回测失败");
     }
 }
 
