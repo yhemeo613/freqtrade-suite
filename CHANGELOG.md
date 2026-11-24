@@ -17,7 +17,7 @@
 - 新增 `jobStatus.ts` 14 个用例；单测总数 51 → **65**（7 文件）
 - 新增 `usePolling` 5 个用例（单飞、间隔热更新、显式间隔优先、卸载停止、异常不中断）；单测总数 65 → **70**（8 文件）
 
-## [v1.0.2] - 2026-11-24
+## [v1.0.3] - 2026-11-24
 
 ### 变更
 
@@ -185,6 +185,7 @@
 - Nginx gzip 压缩 + 静态资源 30 天缓存；Telegram 周期统计文案拼接修复
 
 [v1.0.2]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.2
+[v1.0.3]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.3
 [v1.0.2]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.2
 [v1.0.1]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.1
 [v1.0.0]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.0
