@@ -69,6 +69,7 @@ import {
     exitReasonZh,
     entryTagZh,
     directionZh,
+    botStateZh,
     shortPair
 } from "@/lib/format";
 import { parseOptionalPrice } from "@/lib/parse";
@@ -105,13 +106,6 @@ const fePair = ref("");
 const fePrice = ref("");
 const feSide = ref<"long" | "short">("long");
 
-const stateMap: Record<string, string> = {
-    running: "运行中",
-    paused: "已暂停",
-    stopped: "已停止",
-    reload_config: "重载配置中"
-};
-
 async function loadAll() {
     const [status, trades, config] = await Promise.all([
         runApi(() => api.status(), true),
@@ -122,7 +116,7 @@ async function loadAll() {
     if (trades)
         closedTrades.value = (trades.trades ?? []).filter((t: Trade) => !t.is_open).reverse();
     if (config) {
-        botState.value = stateMap[config.state] ?? config.state;
+        botState.value = botStateZh(config.state);
         stakeCurrency.value = config.stake_currency ?? "USDT";
         forceEntryEnable.value = !!config.force_entry_enable;
     }

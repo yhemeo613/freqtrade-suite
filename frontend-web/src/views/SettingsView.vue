@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { settingsStore, saveSettings } from "@/stores/settings";
 import { authStore, updateBot, removeBot, connectBot, disconnect, activeBot } from "@/stores/auth";
+import { botStateZh } from "@/lib/format";
 import type { ShowConfigResponse, SysInfoResponse } from "@/api/types";
 
 const router = useRouter();
@@ -274,7 +275,7 @@ async function switchBot(botId: string) {
                         ['最大持仓数', config.max_open_trades],
                         ['周期', config.timeframe],
                         ['策略', config.strategy],
-                        ['当前状态', config.state]
+                        ['当前状态', botStateZh(config.state)]
                     ]"
                     :key="row[0]"
                 >

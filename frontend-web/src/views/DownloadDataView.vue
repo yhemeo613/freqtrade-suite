@@ -17,10 +17,12 @@ import {
 import { Download, Globe } from "lucide-vue-next";
 import { getClient } from "@/api/client";
 import { runApi, api } from "@/composables/useBotData";
+import { defaultTimerange } from "@/lib/parse";
 
 const TIMEFRAMES = ["5m", "15m", "30m", "1h", "2h", "4h", "8h", "1d"];
 const timeframes = ref<string[]>(["5m", "15m", "1h"]);
-const timerange = ref("20261001-");
+// 滚动默认值（60 天前至今），避免硬编码日期随时间过期
+const timerange = ref(defaultTimerange(60));
 const tradingMode = ref("spot");
 const pairsText = ref("");
 const loadingPairs = ref(true);
