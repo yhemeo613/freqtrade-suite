@@ -2,6 +2,21 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有显著变更都会记录在此文件中。
 
+## [v1.0.2] - 2026-11-24
+
+### 修复
+
+- **后台任务失败被误报为成功**：回测失败时 freqtrade 返回 `status="error"`（不是 `failed`）且 `running=false`，原逻辑用 `running === false` 判定「已完成」，导致回测失败弹「回测完成」、Recursive/Lookahead 分析失败弹「分析完成」；新增 `src/lib/jobStatus.ts` 把状态统一归类为 `idle / running / success / error`
+- **高级分析状态文案**：补上 `Analysis ended` 的中文映射（原映射匹配的是不存在的 `Analysis finished`），状态列不再直接显示英文 `ended` / `error`
+- **分析按钮卡死**：轮询连续失败停止后仍保持「分析中…」禁用态，无法重新发起
+- **刷新间隔设置不生效**：设置页调整「数据刷新间隔」后，已挂载页面仍按旧间隔轮询（定时器在启动时捕获间隔），必须切页面重进才生效
+- **轮询请求堆积**：接口变慢时定时器仍按固定间隔触发，未返回的请求会越堆越多；`usePolling` 增加单飞守卫（上一次未返回则跳过本次）
+
+### 测试
+
+- 新增 `jobStatus.ts` 14 个用例；单测总数 51 → **65**（7 文件）
+- 新增 `usePolling` 5 个用例（单飞、间隔热更新、显式间隔优先、卸载停止、异常不中断）；单测总数 65 → **70**（8 文件）
+
 ## [v1.0.1] - 2026-11-23
 
 ### 修复
@@ -158,6 +173,7 @@
 - 107 个组件从 `cn` 包迁移到本地 `@/lib/utils`，卸载 `cn` 依赖(#9)
 - Nginx gzip 压缩 + 静态资源 30 天缓存；Telegram 周期统计文案拼接修复
 
+[v1.0.2]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.2
 [v1.0.1]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.1
 [v1.0.0]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.0
 [v0.5.1]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v0.5.1
