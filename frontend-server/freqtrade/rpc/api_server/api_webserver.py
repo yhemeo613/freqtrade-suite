@@ -66,12 +66,18 @@ def list_hyperoptloss(
 
 @router.get("/freqaimodels", response_model=FreqAIModelListResponse, tags=["FreqAI"])
 def list_freqaimodels(config=Depends(get_config)):
-    from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
+    # 本地补丁：官方 stable 镜像不含 FreqAI 可选依赖（datasieve / torch 等）。
+    # 依赖缺失时返回空列表并告警，避免前端调用时触发 500 与 ASGI 异常堆栈。
+    try:
+        from freqtrade.resolvers.freqaimodel_resolver import FreqaiModelResolver
 
-    models = FreqaiModelResolver.search_all_objects(config, False)
-    models = sorted(models, key=lambda x: x["name"])
+        models = FreqaiModelResolver.search_all_objects(config, False)
+        models = sorted(models, key=lambda x: x["name"])
 
-    return {"freqaimodels": [x["name"] for x in models]}
+        return {"freqaimodels": [x["name"] for x in models]}
+    except ModuleNotFoundError as err:
+        logger.warning("FreqAI 依赖未安装，返回空模型列表：%s", err)
+        return {"freqaimodels": []}
 
 
 @router.get(

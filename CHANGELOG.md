@@ -2,6 +2,16 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有显著变更都会记录在此文件中。
 
+## [v1.2.1] - 2026-11-24
+
+### 修复
+
+- `freqaimodels` 接口优雅降级：官方 stable 镜像缺 FreqAI 可选依赖（`datasieve`）时返回空列表并告警，消除 `/api/v1/freqaimodels` 的 500 与 ASGI 异常堆栈
+
+### 文档
+
+- README 故障排查：说明 `freqaimodels` 降级行为；补充「递归分析对 NFI 不可用」（需 5 倍启动 K 线，超出交易所上限）
+
 ## [v1.2.0] - 2026-11-24
 
 ### 变更

@@ -102,7 +102,7 @@ freqtrade 官方设计上，**回测、数据下载、策略列表、Recursive /
 | `pairlists*` / `available_pairs` | `ft-ws:8081` | 交易对与 pairlist |
 | `strategies` / `exchanges` / `hyperoptloss` | `ft-ws:8081` | 策略 / 交易所 / 超参列表 |
 | `lookahead_analysis` / `recursive_analysis` | `ft-ws:8081` | 高级分析 |
-| `freqaimodels` | `ft-ws:8081` | FreqAI 模型列表（当前镜像缺依赖，见「故障排查」） |
+| `freqaimodels` | `ft-ws:8081` | FreqAI 模型列表（镜像缺依赖时优雅降级为空列表，见「故障排查」） |
 | **其余所有 `/api/*`** | `ft-trade:8080` | 登录、状态、交易、余额、K 线、`plot_config`、WebSocket |
 
 > 新增 webserver 专属接口时，只需把路径前缀加入 `frontend-web/nginx.conf` 的正则分组。
@@ -445,11 +445,17 @@ docker compose ps                      # 健康状态
 - 检查 Nginx 是否把该路径分到了正确上游：`docker compose logs ft-web | grep <路径>`
 - 例如 `plot_config` 属于交易进程，不应分流到 8081
 
-### `freqaimodels` 返回 500（`No module named 'datasieve'`）
+### `freqaimodels` 返回空列表（`FreqAI 依赖未安装`）
 
-官方 `stable` 镜像不含 FreqAI 可选依赖，属预期行为，前端已做降级。需要 FreqAI 时：
-把 `docker-compose.yml` 中两个 freqtrade 服务的镜像换成 `freqtradeorg/freqtrade:stable_freqai`
-（RL 需求用 `stable_freqairl`）并重建。
+官方 `stable` 镜像不含 FreqAI 可选依赖（`datasieve` / `torch` 等）。本套件已对该接口做**优雅降级**：
+依赖缺失时返回 `{"freqaimodels": []}` 并在日志告警，不再产生 500 与 ASGI 异常堆栈。
+需要使用 FreqAI 时：把 `docker-compose.yml` 中两个 freqtrade 服务的镜像换成
+`freqtradeorg/freqtrade:stable_freqai`（RL 需求用 `stable_freqairl`）并重建。
+
+### 递归分析（Recursive Analysis）对 NFI 不可用
+
+NFI X8 需要约 2000 根启动 K 线，递归分析要求 **5 倍**（≈10000 根），超出交易所数据上限，
+接口会返回配置错误（属预期，不影响交易）。需要递归分析请换用启动 K 线较少的策略。
 
 ### OKX 时间偏移告警
 
