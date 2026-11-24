@@ -53,6 +53,9 @@ python scripts/smoke_test.py
 6. **发布合并方式**:`release/*` / `hotfix/*` → `main` 与 `release/*` → `develop` 必须使用
    merge commit(`gh pr merge --merge`),**禁止 squash**;否则 main 与 develop 历史分叉,
    后续发布会触发整树冲突。`feature/*` → `develop` 可使用 squash。
+   仓库开启了 `delete_branch_on_merge`:release 分支合入 `main` 后远端分支会被自动删除,
+   合回 `develop` 前需先用本地分支 `git push origin release/vX.Y.Z` 重新推送(详见
+   `docs/DEVELOPMENT_WORKFLOW.md` 第 3 节的注意事项)。
 7. 不要为了刷存在感而强行改代码:没有值得做的改动时,如实汇报即可。
 8. **Windows 工具注意**:修改含中文的文件时,避免用 PowerShell `Get-Content`/`Set-Content`
    正则批量改写(编码往返会破坏 UTF-8 中文,且 git 不报错);优先使用编辑工具逐处修改,

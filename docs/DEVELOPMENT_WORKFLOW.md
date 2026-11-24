@@ -74,6 +74,22 @@ gh pr merge <PR号> --merge --delete-branch
 > 两个分支从此没有共同祖先(只剩最初提交),下一次 release 合并会触发整树冲突。
 > 统一使用 merge commit 可让两分支始终共享历史。feature → develop 仍可使用 squash。
 
+> **注意:仓库已开启 `delete_branch_on_merge`**。`release/*` 通过 PR 合入 `main` 后,
+> GitHub 会**自动删除远端的 release 分支**,于是第 6 步「release → develop」就没有 head 分支可用了
+> (`gh pr create --head release/vX.Y.Z` 会报找不到分支)。标准做法:
+>
+> ```bash
+> # 合并到 main 之前确认本地分支还在(合并 PR 不会删本地分支)
+> git branch --list 'release/*'
+> # 需要时把本地分支重新推上去,再开合回 develop 的 PR
+> git push origin release/v0.3.0
+> gh pr create --base develop --head release/v0.3.0 --title "chore: release v0.3.0 合并回 develop"
+> gh pr merge <PR号> --merge --delete-branch
+> ```
+>
+> 不要在 release PR 合并后 `git pull` 才发现分支没了就改用 squash,也不要把 main 直接 merge 进 develop
+> 绕过 PR —— 两者都会破坏开发流程或分支保护。
+
 
 ## 4. 验证清单(合并前必须全过)
 
