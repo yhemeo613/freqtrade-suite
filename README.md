@@ -2,8 +2,9 @@
 
 > 基于 [freqtrade](https://github.com/freqtrade/freqtrade)（2026.11-dev）的完整中文化部署方案：
 > **汉化服务端 + 自研中文 Web 控制台 + Nginx 同源分流 + Docker Compose 一键启动**。
-> 默认以 OKX **永续合约模拟盘**（dry_run，10,000 USDT，最多 6 仓，40 个主流与山寨标的）+ NostalgiaForInfinityX8 策略运行。
-> 标的数量按 OKX WebSocket 限制折算：**每连接最多 240 个订阅频道**，NFI 每标的需 5 个周期（5m/15m/1h/4h/1d），40 × 5 = 200 频道。
+> 默认以 OKX **永续合约模拟盘**（dry_run，10,000 USDT，最多 6 仓，**动态标的池**）+ NostalgiaForInfinityX8 策略运行。
+> 标的池由 `VolumePairList` 每 30 分钟按 24h 成交额从 **OKX 全部 USDT 永续**（含加密货币、股票代币、商品代币）中选出 40 个；
+> 每连接最多 240 个 WS 订阅频道，NFI 每标的需 5 个周期，40 × 5 = 200 频道，留有余量。
 
 ![freqtrade](https://img.shields.io/badge/freqtrade-2026.11--dev-1f6feb?style=flat-square)
 ![strategy](https://img.shields.io/badge/strategy-NostalgiaForInfinityX8-8b5cf6?style=flat-square)
@@ -211,7 +212,8 @@ docker compose up -d --build
 | `stake_amount` | 单仓保证金，默认 `unlimited`（NFI 推荐口径：每仓 = 可用资金 / 最大持仓数，补仓使用剩余保证金） |
 | `max_open_trades` | 最大同时持仓数，默认 `6`（NFI 官方建议 6-12 个持仓位） |
 | `trading_mode` / `margin_mode` | 交易模式，默认 `futures`（永续合约）/ `isolated`（逐仓） |
-| `exchange.pair_whitelist` | 交易标的，默认 **40 个** OKX USDT 永续（主流 + 主流山寨，均要求上市满 90 天；数量受 OKX WS 每连接 240 频道限制：NFI 每标的 5 周期 → 40×5=200 频道） |
+| `exchange.pair_whitelist` | 静态白名单（动态标的池启用时被 `pairlists` 覆盖，仅作备用） |
+| `pairlists` | **动态标的池**：默认 `VolumePairList`（ticker 模式，每 30 分钟用 1 次全市场 tickers 请求选出成交额 top 40，覆盖全部 USDT 永续/现货，**不过滤**股票代币与商品代币） |
 | `exchange.name` | 默认 `okx`，可替换为 freqtrade 支持的其他交易所 |
 | `exchange.ccxt_config` | REST 限流参数，默认 `{"enableRateLimit": true, "rateLimit": 200}`（遵守交易所请求频率） |
 | `exchange.enable_ws` | WebSocket 开关（默认开启）；WS 订阅按交易所配额（OKX 480 次/小时）自动节流，超配额通道自动回退 REST |
@@ -226,6 +228,27 @@ docker compose up -d --build
 | `telegram.selfheal` | 轮询自愈看门狗开关（默认 `true`）；关闭后轮询卡顿时不再自动重建应用，也不再产生额外健康检查请求 |
 
 `config_ws.json` 仅覆盖 webserver 的监听端口（`8081`），其余配置继承 `config.json`。
+
+### 动态标的池与全市场监控
+
+- 默认 `pairlists` 使用 `VolumePairList`（**ticker 模式**）：每 30 分钟调用 **1 次** `fetchTickers` 取回 OKX 全市场行情，按 24h 成交额选出 top 40 进入白名单
+- 覆盖**全部 OKX USDT 永续**（加密货币 + 股票代币 + 商品代币，**不做类别过滤**）；现货模式覆盖全部 USDT 现货
+- 单次全市场扫描约 10–20 秒、仅 1 次 REST 请求，**不会触发 OKX 50011 限流**；WebSocket 只订阅入选的 40 个标的
+- 合规要点：
+  - WS 单连接 ≤ 240 频道（40 标的 × 5 周期 = 200，留余量）
+  - WS 订阅/退订 ≤ 480 次/小时、写入 ≤ 3 条/秒（代码内置节流与退避）
+  - REST 由 ccxt `rateLimit: 200ms` 节流
+- 调整：`pairlists[0].number_assets`（建议 ≤ 48，保证 48×5=240 频道内）；刷新频率 `pairlists[0].refresh_period`（秒，默认 1800）
+
+### 现货 / 永续模式切换
+
+| 模式 | 示例配置 | 关键项 |
+|---|---|---|
+| 永续合约（默认） | `config.example.json` | `trading_mode: futures` / `margin_mode: isolated` |
+| 现货 | `config.spot.example.json` | `trading_mode: spot` / `margin_mode: ""`，独立数据库 `tradesv3.spot.sqlite` |
+
+切换步骤：复制对应示例为 `config.json` → 填入凭据 → `docker compose restart freqtrade freqtrade-ws`。
+两种模式使用**同一套动态标的池**（VolumePairList + WS 频道预算），限流规则完全一致。
 
 ---
 

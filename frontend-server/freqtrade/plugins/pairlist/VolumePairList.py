@@ -129,6 +129,22 @@ class VolumePairList(IPairList):
             **IPairList.lookback_parameters(),
         }
 
+    def _ensure_quote_volume(self, tickers: list[dict]) -> None:
+        """
+        本地补丁：OKX 期货 tickers 不提供 quoteVolume，用 baseVolume * last 兜底计算。
+
+        这样 VolumePairList 可以用 tickers 模式（1 次 REST 请求拿到全市场行情）完成
+        全市场成交额排名，避免逐标的拉 K 线触发 OKX 限流（50011）。
+        """
+        for t in tickers:
+            if t.get("quoteVolume") is None:
+                try:
+                    t["quoteVolume"] = float(t.get("baseVolume") or 0) * float(
+                        t.get("last") or 0
+                    )
+                except (TypeError, ValueError):
+                    t["quoteVolume"] = 0.0
+
     def gen_pairlist(self, tickers: Tickers) -> list[str]:
         """
         Generate the pairlist
@@ -158,10 +174,14 @@ class VolumePairList(IPairList):
                     for k, v in tickers.items()
                     if (
                         self._exchange.get_pair_quote_currency(k) == self._stake_currency
-                        and (self._use_range or v.get(self._sort_key) is not None)
+                        and (
+                            v.get(self._sort_key) is not None
+                            or v.get("baseVolume") is not None
+                        )
                         and v["symbol"] in _pairlist
                     )
                 ]
+                self._ensure_quote_volume(filtered_tickers)
                 pairlist = [s["symbol"] for s in filtered_tickers]
             else:
                 pairlist = _pairlist
@@ -237,6 +257,7 @@ class VolumePairList(IPairList):
         else:
             # Tickers mode - filter based on incoming pairlist.
             filtered_tickers = [v for k, v in tickers.items() if k in pairlist]
+            self._ensure_quote_volume(filtered_tickers)
 
         if self._min_value and self._min_value > 0:
             filtered_tickers = [v for v in filtered_tickers if v[self._sort_key] > self._min_value]

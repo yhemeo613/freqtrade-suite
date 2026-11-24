@@ -97,7 +97,10 @@
   "exchange_ws_max_channels": 240,
   "pairlists": [
     {
-      "method": "StaticPairList"
+      "method": "VolumePairList",
+      "number_assets": 40,
+      "sort_key": "quoteVolume",
+      "refresh_period": 1800
     }
   ],
   "initial_state": "running",
