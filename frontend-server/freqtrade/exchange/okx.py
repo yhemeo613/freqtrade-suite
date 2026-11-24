@@ -37,7 +37,9 @@ class Okx(Exchange):
         "ws_enabled": {"ohlcv": True, "orderbook": True},
     }
     _ft_has_futures: FtHas = {
-        "tickers_have_quoteVolume": False,
+        # 本地补丁：OKX 期货 tickers 不直接提供 quoteVolume，
+        # VolumePairList 会用 baseVolume * last 兜底计算，这里放行动态标的池。
+        "tickers_have_quoteVolume": True,
         "funding_history_limit": 100,
         "stop_price_type_field": "slTriggerPxType",
         "stop_price_type_value_mapping": {
