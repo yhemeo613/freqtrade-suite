@@ -1,4 +1,4 @@
-import { ref, onUnmounted } from "vue";
+import { ref, onUnmounted, watch } from "vue";
 import { getClient, hasClient } from "@/api/client";
 import { settingsStore } from "@/stores/settings";
 import { toast } from "vue-sonner";
@@ -6,15 +6,18 @@ import { toast } from "vue-sonner";
 /**
  * 定时轮询 freqtrade API。组件卸载自动停止。
  *
- * 额外优化：页面切到后台(document.hidden)时暂停计时器，避免无意义请求；
- * 回到前台时立即刷新一次并恢复轮询。
+ * 额外优化：
+ * - 页面切到后台(document.hidden)时暂停计时器，避免无意义请求；回到前台立即刷新一次并恢复轮询
+ * - 单飞：上一次轮询未返回时跳过本次，避免接口变慢时请求越堆越多
+ * - 跟随设置页的刷新间隔即时生效（显式传入 intervalMs 的页面不受全局设置影响）
  */
 export function usePolling(fn: () => Promise<void>, intervalMs?: number) {
     let timer: ReturnType<typeof setInterval> | null = null;
+    // 单飞守卫：只约束定时器触发的轮询，手动 refresh 仍然立即执行
+    let inFlight = false;
     const paused = ref(false);
 
-    async function tick() {
-        if (paused.value || !hasClient() || document.hidden) return;
+    async function run() {
         try {
             await fn();
         } catch (e: unknown) {
@@ -22,9 +25,22 @@ export function usePolling(fn: () => Promise<void>, intervalMs?: number) {
         }
     }
 
+    async function tick() {
+        if (paused.value || inFlight || !hasClient() || document.hidden) return;
+        inFlight = true;
+        try {
+            await run();
+        } finally {
+            inFlight = false;
+        }
+    }
+
+    function currentInterval() {
+        return intervalMs ?? settingsStore.refreshIntervalMs;
+    }
     function startTimer() {
         if (timer) return;
-        timer = setInterval(tick, intervalMs ?? settingsStore.refreshIntervalMs);
+        timer = setInterval(tick, currentInterval());
     }
     function stopTimer() {
         if (timer) clearInterval(timer);
@@ -47,13 +63,25 @@ export function usePolling(fn: () => Promise<void>, intervalMs?: number) {
         }
     }
 
+    // 设置页调整「数据刷新间隔」后，已挂载的页面立即按新间隔轮询，无需切页面重进
+    const stopWatchInterval = watch(
+        () => settingsStore.refreshIntervalMs,
+        () => {
+            if (intervalMs !== undefined) return; // 显式指定间隔的页面不受全局设置影响
+            if (!timer) return; // 后台暂停期间不重建，回到前台时按新间隔启动
+            stopTimer();
+            startTimer();
+        }
+    );
+
     start();
     document.addEventListener("visibilitychange", onVisibilityChange);
     onUnmounted(() => {
         stopTimer();
+        stopWatchInterval();
         document.removeEventListener("visibilitychange", onVisibilityChange);
     });
-    return { refresh: tick, stop, paused };
+    return { refresh: run, stop, paused };
 }
 
 /* ---------- 常用 API 封装 ---------- */
