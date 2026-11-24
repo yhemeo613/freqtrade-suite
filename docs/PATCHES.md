@@ -34,6 +34,8 @@
 | `freqtrade/exchange/okx.py` | 期货 tickers 动态标的池放行 | `_ft_has_futures["tickers_have_quoteVolume"] = True`，允许 `VolumePairList` 在 OKX 期货上使用 ticker 模式（1 次全市场请求完成成交额排名，避免逐标的拉 K 线触发 50011） |
 | `freqtrade/plugins/pairlist/VolumePairList.py` | `quoteVolume` 兜底计算 | OKX 期货 tickers 不提供 `quoteVolume`，用 `baseVolume × last` 兜底；并放宽 ticker 模式过滤条件（有 `baseVolume` 即可入选） |
 | `freqtrade/rpc/api_server/api_webserver.py` | `freqaimodels` 优雅降级 | 官方 stable 镜像缺 FreqAI 可选依赖（`datasieve`/`torch`），依赖缺失时返回空列表 + 告警，替代原先的 500 与 ASGI 异常堆栈 |
+| `freqtrade/plugins/pairlist/NewCoinWeightedVolumePairList.py` | **新币加权动态标的池(新增插件)** | 继承 VolumePairList ticker 模式:1 次全市场请求,新币(上市 ≤90 天)成交额加权(最高 ×9),可排除主流大币与股票/商品代币;每 10 分钟刷新,WS 只订阅入选 40 个,零限流且不漏新币 |
+| `freqtrade/constants.py` | 注册自定义 pairlist | `AVAILABLE_PAIRLISTS` 追加 `NewCoinWeightedVolumePairList`,通过 config 校验枚举 |
 | `freqtrade/configuration/config_validation.py` | 占位符凭据 fail-fast | 拒绝 `jwt_secret_key` / `password` 含「请替换」的模板占位符配置，防止以"已知密钥 + 已知口令"运行 API |
 
 ## 三、升级 freqtrade 时的重放步骤

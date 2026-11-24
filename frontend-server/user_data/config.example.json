@@ -97,7 +97,12 @@
   "exchange_ws_max_channels": 240,
   "pairlists": [
     {
-      "method": "StaticPairList"
+      "method": "NewCoinWeightedVolumePairList",
+      "number_assets": 40,
+      "sort_key": "quoteVolume",
+      "refresh_period": 600,
+      "new_coin_days": 90,
+      "new_coin_boost": 8
     }
   ],
   "initial_state": "running",
