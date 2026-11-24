@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+    botStateZh,
     directionZh,
     entryTagZh,
     exitReasonZh,
@@ -142,5 +143,22 @@ describe("directionZh", () => {
     it("多空方向", () => {
         expect(directionZh(true)).toBe("做空");
         expect(directionZh(false)).toBe("做多");
+    });
+});
+
+describe("botStateZh", () => {
+    it("映射机器人运行状态", () => {
+        expect(botStateZh("running")).toBe("运行中");
+        expect(botStateZh("paused")).toBe("已暂停");
+        expect(botStateZh("stopped")).toBe("已停止");
+        expect(botStateZh("reload_config")).toBe("重载配置中");
+    });
+    it("未知状态原样保留", () => {
+        expect(botStateZh("starting")).toBe("starting");
+    });
+    it("空值返回占位符", () => {
+        expect(botStateZh(undefined)).toBe("—");
+        expect(botStateZh(null)).toBe("—");
+        expect(botStateZh("")).toBe("—");
     });
 });

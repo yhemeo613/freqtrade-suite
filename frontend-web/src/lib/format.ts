@@ -114,3 +114,15 @@ export function entryTagZh(tag: string | undefined | null): string {
 export function directionZh(isShort: boolean | undefined): string {
     return isShort ? "做空" : "做多";
 }
+
+/** 机器人运行状态中文映射（freqtrade config.state） */
+const BOT_STATE_ZH: Record<string, string> = {
+    running: "运行中",
+    paused: "已暂停",
+    stopped: "已停止",
+    reload_config: "重载配置中"
+};
+export function botStateZh(state: string | undefined | null): string {
+    if (!state) return "—";
+    return BOT_STATE_ZH[state] ?? state;
+}
