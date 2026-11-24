@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import EmptyState from "@/components/ft/EmptyState.vue";
-import { api, runApi } from "@/composables/useBotData";
+import { api, runApi, usePolling } from "@/composables/useBotData";
 import { fmtCoin, fmtPct, profitColor } from "@/lib/format";
 import type { PerformanceEntry, EntryTagEntry, ExitReasonEntry, MixTagEntry } from "@/api/types";
 
@@ -47,15 +47,20 @@ async function loadTab(name: string) {
     }
 }
 
-function onTabChange(v: string | number) {
-    tab.value = String(v);
-    const dataMap: Record<string, unknown[]> = {
+/** 当前激活标签的数据集合（用于轮询刷新） */
+function dataOf(name: string): unknown[] {
+    const map: Record<string, unknown[]> = {
         performance: performance.value,
         entries: entries.value,
         exits: exits.value,
         mixTags: mixTags.value
     };
-    if (!dataMap[tab.value].length) void loadTab(tab.value);
+    return map[name] ?? [];
+}
+
+function onTabChange(v: string | number) {
+    tab.value = String(v);
+    if (!dataOf(tab.value).length) void loadTab(tab.value);
 }
 
 /** 动态列名取值（各统计项首列字段不同：pair / enter_tag / ...） */
@@ -63,6 +68,11 @@ function rowLabel(row: unknown, key: string): string {
     if (!row || typeof row !== "object") return "";
     return String((row as Record<string, unknown>)[key] ?? "");
 }
+
+// 当前标签已有数据时随轮询持续刷新（新平仓/新标签无需切 tab 重进）
+usePolling(async () => {
+    if (dataOf(tab.value).length) await loadTab(tab.value);
+});
 
 onMounted(() => void loadTab("performance"));
 </script>

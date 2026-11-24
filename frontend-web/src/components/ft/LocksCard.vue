@@ -12,7 +12,7 @@ import {
     TableRow
 } from "@/components/ui/table";
 import { Lock, Unlock } from "lucide-vue-next";
-import { api, runApi } from "@/composables/useBotData";
+import { api, runApi, usePolling } from "@/composables/useBotData";
 import { fmtDate } from "@/lib/format";
 import type { Lock as LockRecord } from "@/api/types";
 
@@ -23,6 +23,9 @@ async function load() {
     const res = await runApi(() => api.locks(), true);
     if (res) locks.value = (res.locks ?? []) as LockRecord[];
 }
+
+// 锁定列表随轮询持续刷新（锁定到期/手动解锁后无需切 tab 重进）
+usePolling(load);
 
 async function unlock(id: number | string) {
     unlocking.value = String(id);
