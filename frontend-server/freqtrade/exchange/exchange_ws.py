@@ -27,6 +27,9 @@ class ExchangeWS:
     # 交易所 WS 订阅配额：OKX 官方限制每连接 subscribe+unsubscribe+login 共 480 次/小时。
     # 超出配额时跳过订阅，上层 get_ohlcv 会自动回退 REST（REST 侧由 ccxt rateLimit 限流）。
     ws_sub_limit_per_hour = 480
+    # 交易所 WS 单连接频道上限：OKX 每连接最多 240 个订阅频道。
+    # 超过时不再订阅新频道（回退 REST），避免对端以 1006 关闭连接。
+    ws_max_channels = 240
     # 交易所 WS 写入频率：OKX 约 3 条消息/秒 → 订阅请求至少间隔 0.34s
     ws_sub_min_interval = 0.34
 
@@ -231,6 +234,17 @@ class ExchangeWS:
             with self._state_lock:
                 if p in self._klines_scheduled:
                     continue
+                # 单连接频道上限保护：已订阅频道数达到上限时不再订阅新频道
+                active_channels = len(self._klines_scheduled) + len(self._ob_scheduled)
+                if active_channels >= self.ws_max_channels:
+                    logger.debug(
+                        "WS 频道数已达单连接上限 %s，跳过 %s %s %s",
+                        self.ws_max_channels,
+                        p[0],
+                        p[1],
+                        p[2],
+                    )
+                    continue
                 if not self._reserve_ws_subscription():
                     # 订阅配额已用尽：不标记 scheduled，后续周期再尝试；本次由 REST 兜底
                     logger.debug(
@@ -261,6 +275,9 @@ class ExchangeWS:
             # Check if they're already scheduled
             with self._state_lock:
                 if ob_pair in self._ob_scheduled:
+                    continue
+                active_channels = len(self._klines_scheduled) + len(self._ob_scheduled)
+                if active_channels >= self.ws_max_channels:
                     continue
                 if not self._reserve_ws_subscription():
                     continue

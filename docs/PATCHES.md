@@ -30,7 +30,7 @@
 | 文件 | 补丁 | 说明 |
 |---|---|---|
 | `freqtrade/rpc/telegram.py` | `ft-selfheal` 轮询看门狗 | 重建 Application、滑动窗口重启预算（8 次 / 30 分钟）。可通过 `telegram.selfheal: false` 关闭（默认开启），与纯文案翻译分离；关闭后也不再有额外的健康检查 API 调用。`_mark_update_seen` 必须为协程（async），否则每条消息触发 `TypeError: 'NoneType' object can't be awaited` |
-| `freqtrade/exchange/exchange_ws.py` | WS 订阅限流合规 | 订阅请求按交易所配额节流：480 次/小时（OKX subscribe+unsubscribe+login 限制）+ 3 条/秒写入间隔 + 限流退避 60s；超配额通道不订阅、自动由 REST 兜底，避免 `60014 Requests too frequent` 错误风暴 |
+| `freqtrade/exchange/exchange_ws.py` | WS 订阅限流合规 | 订阅请求按交易所配额节流：480 次/小时（OKX subscribe+unsubscribe+login 限制）+ 3 条/秒写入间隔 + 限流退避 60s + **单连接频道上限 240**（OKX 限制，超出自动回退 REST），避免 `60014 Requests too frequent` 与 1006 断连风暴 |
 | `freqtrade/configuration/config_validation.py` | 占位符凭据 fail-fast | 拒绝 `jwt_secret_key` / `password` 含「请替换」的模板占位符配置，防止以"已知密钥 + 已知口令"运行 API |
 
 ## 三、升级 freqtrade 时的重放步骤

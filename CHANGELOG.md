@@ -17,6 +17,17 @@
 - 新增 `jobStatus.ts` 14 个用例；单测总数 51 → **65**（7 文件）
 - 新增 `usePolling` 5 个用例（单飞、间隔热更新、显式间隔优先、卸载停止、异常不中断）；单测总数 65 → **70**（8 文件）
 
+## [v1.0.2] - 2026-11-24
+
+### 变更
+
+- 默认标的由 110 个缩减为 **40 个**（200 个 WS 频道），符合 OKX「每连接最多 240 个订阅频道」限制：NFI 每标的需 5 个周期（5m/15m/1h/4h/1d），40 × 5 = 200 频道
+- `exchange_ws.py` 新增**单连接频道上限保护**（240）：达到上限后不再订阅新频道，自动由 REST 兜底
+
+### 修复
+
+- 消除 OKX 以 `1006` 关闭 WS 连接引发的订阅重试风暴（此前日均 ERROR 约 3300 条、日志约 19.5MB）
+
 ## [v1.0.1] - 2026-11-23
 
 ### 修复
@@ -173,6 +184,7 @@
 - 107 个组件从 `cn` 包迁移到本地 `@/lib/utils`，卸载 `cn` 依赖(#9)
 - Nginx gzip 压缩 + 静态资源 30 天缓存；Telegram 周期统计文案拼接修复
 
+[v1.0.2]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.2
 [v1.0.2]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.2
 [v1.0.1]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.1
 [v1.0.0]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.0
