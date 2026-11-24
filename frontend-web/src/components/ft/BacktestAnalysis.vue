@@ -18,6 +18,7 @@ import {
     TableRow
 } from "@/components/ui/table";
 import { fmtPct, profitColor, parseDate } from "@/lib/format";
+import { settingsStore } from "@/stores/settings";
 import {
     createChart,
     CandlestickSeries,
@@ -53,7 +54,8 @@ let markersApi: ISeriesMarkersPluginApi<Time> | null = null;
 const phLoading = ref(false);
 
 function chartOpts() {
-    const dark = document.documentElement.classList.contains("dark");
+    // 与全局主题保持一致（settingsStore 是唯一事实来源，App.vue 切换时同步更新）
+    const dark = settingsStore.theme === "dark";
     return {
         layout: {
             background: { type: ColorType.Solid, color: "transparent" },
@@ -223,6 +225,15 @@ onUnmounted(() => {
     walletChart = null;
     markersApi = null;
 });
+
+// 切换亮/暗色时同步两处图表配色（K 线图 + 钱包曲线），避免亮色下文字不可读
+watch(
+    () => settingsStore.theme,
+    () => {
+        chart?.applyOptions(chartOpts());
+        walletChart?.applyOptions(chartOpts());
+    }
+);
 </script>
 
 <template>
