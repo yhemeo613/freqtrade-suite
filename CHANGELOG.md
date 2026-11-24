@@ -2,6 +2,14 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有显著变更都会记录在此文件中。
 
+## [v1.2.0] - 2026-11-24
+
+### 变更
+
+- 默认标的池改为**山寨倾向**：40 个 USDT 永续，按 OKX 24h 成交额排序、上市 ≥90 天筛选，**排除主流大币**（BTC/ETH/SOL/XRP/DOGE/ADA/BNB/LTC/BCH/TRX/DOT/LINK/AVAX/ATOM/UNI/ETC/XLM）与股票/商品代币
+- 现货示例 `config.spot.example.json` 同步为同一山寨列表
+- 回测依据：NFI X8 对主流币几乎不触发信号，山寨币（UNI/APT/SUI/AVAX/ATOM/PEPE 等）才有入场信号
+
 ## [v1.1.1] - 2026-11-24
 
 ### 变更
