@@ -2,20 +2,18 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有显著变更都会记录在此文件中。
 
-## [未发布]
+## [v1.0.6] - 2026-11-24
 
 ### 修复
 
 - **交易页副 tab 数据不随轮询刷新**：「表现统计」与「保护锁定」tab 只在挂载时加载一次，停在该页签时数据过期（新平仓、锁定到期不会出现）；两者改为接入 `usePolling` 随全局刷新间隔持续更新，与主「交易」tab 行为一致
 - **机器人状态中文显示不一致**：设置页「当前状态」直接显示英文 `running` / `paused`，与交易页状态徽章的中文文案不一致；把状态映射抽为 `format.ts` 的 `botStateZh()` 供两处共用
+- **数据下载/回测的时间范围默认值改为滚动生成**：原来硬编码 `20261001-` / `20261020-`，随时间推移会变成「很久以前」的过期起点；新增 `defaultTimerange()`（下载默认 60 天前、回测默认 30 天前，结束留空=至今）
 
 ### 测试
 
 - 新增 `botStateZh` 3 个用例（状态映射 / 未知值原样保留 / 空值占位）；单测总数 75 → **78**（8 文件）
-
-### 变更
-
-- **数据下载/回测的时间范围默认值改为滚动生成**：原来硬编码 `20261001-` / `20261020-`，随时间推移会变成「很久以前」的过期起点；新增 `defaultTimerange()`（下载默认 60 天前、回测默认 30 天前，结束留空=至今），并补 4 个单测；单测总数 78 → **82**（8 文件）
+- 新增 `defaultTimerange` 4 个用例（默认 60 天 / 跨月跨年滚动 / 补零 / 格式匹配）；单测总数 78 → **82**（8 文件）
 
 ## [v1.0.5] - 2026-11-24
 
@@ -219,6 +217,7 @@
 - 107 个组件从 `cn` 包迁移到本地 `@/lib/utils`，卸载 `cn` 依赖(#9)
 - Nginx gzip 压缩 + 静态资源 30 天缓存；Telegram 周期统计文案拼接修复
 
+[v1.0.6]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.6
 [v1.0.5]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.5
 [v1.0.4]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.4
 [v1.0.3]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.3
