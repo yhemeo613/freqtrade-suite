@@ -215,6 +215,7 @@ docker compose up -d --build
 | `exchange.name` | 默认 `okx`，可替换为 freqtrade 支持的其他交易所 |
 | `exchange.ccxt_config` | REST 限流参数，默认 `{"enableRateLimit": true, "rateLimit": 200}`（遵守交易所请求频率） |
 | `exchange.enable_ws` | WebSocket 开关（默认开启）；WS 订阅按交易所配额（OKX 480 次/小时）自动节流，超配额通道自动回退 REST |
+| `exchange_ws_sub_limit_per_hour` / `exchange_ws_max_channels` | WS 订阅配额与单连接频道上限（可选覆盖，默认 480 / 240，与 OKX 官方限制一致）；换交易所或调整策略周期数时按需调整，无需改代码 |
 | `exchange.key/secret/password` | 交易所凭据；模拟盘可留空，实盘必填 |
 | `api_server.listen_port` | 交易进程 API 端口，默认 `8080`（与 compose 端口映射一致） |
 | `api_server.username/password` | Web 控制台登录凭据 |
