@@ -3,7 +3,7 @@
 > 基于 [freqtrade](https://github.com/freqtrade/freqtrade)（2026.11-dev）的完整中文化部署方案：
 > **汉化服务端 + 自研中文 Web 控制台 + Nginx 同源分流 + Docker Compose 一键启动**。
 > 默认以 OKX **永续合约模拟盘**（dry_run，10,000 USDT，最多 6 仓，**40 个山寨币永续**）+ NostalgiaForInfinityX8 策略运行。
-> 标的池为**新币加权动态池**（每 10 分钟 1 次全市场扫描，山寨倾向、剔除股票/商品代币与主流大币、**新上市的标的自动纳入**）；每连接最多 240 个 WS 订阅频道，NFI 每标的需 5 个周期（5m/15m/1h/4h/1d），40 × 5 = 200 频道。
+> 标的池为**新币加权动态池**（每 10 分钟 1 次全市场扫描，剔除股票/商品代币，**主流币与山寨币一视同仁、新上市的标的自动纳入**）；每连接最多 240 个 WS 订阅频道，NFI 每标的需 5 个周期（5m/15m/1h/4h/1d），40 × 5 = 200 频道。
 
 ![freqtrade](https://img.shields.io/badge/freqtrade-2026.11--dev-1f6feb?style=flat-square)
 ![strategy](https://img.shields.io/badge/strategy-NostalgiaForInfinityX8-8b5cf6?style=flat-square)
@@ -211,8 +211,8 @@ docker compose up -d --build
 | `stake_amount` | 单仓保证金，默认 `unlimited`（NFI 推荐口径：每仓 = 可用资金 / 最大持仓数，补仓使用剩余保证金） |
 | `max_open_trades` | 最大同时持仓数，默认 `6`（NFI 官方建议 6-12 个持仓位） |
 | `trading_mode` / `margin_mode` | 交易模式，默认 `futures`（永续合约）/ `isolated`（逐仓） |
-| `exchange.pair_whitelist` | 静态白名单：默认 **40 个山寨币永续**（按 OKX 24h 成交额排序、上市 ≥90 天，排除主流大币/股票代币/商品代币） |
-| `pairlists` | **新币加权动态标的池**：`NewCoinWeightedVolumePairList`（ticker 模式，每 10 分钟 1 次全市场请求；山寨倾向、剔除股票/商品代币与主流大币、新币加权） |
+| `exchange.pair_whitelist` | 静态备用白名单（动态标的池启用时被 `pairlists` 覆盖） |
+| `pairlists` | **新币加权动态标的池**：`NewCoinWeightedVolumePairList`（ticker 模式，每 10 分钟 1 次全市场请求；剔除股票/商品代币，主流币与山寨币均可入选、新币加权） |
 | `exchange.name` | 默认 `okx`，可替换为 freqtrade 支持的其他交易所 |
 | `exchange.ccxt_config` | REST 限流参数，默认 `{"enableRateLimit": true, "rateLimit": 200}`（遵守交易所请求频率） |
 | `exchange.enable_ws` | WebSocket 开关（默认开启）；WS 订阅按交易所配额（OKX 480 次/小时）自动节流，超配额通道自动回退 REST |
@@ -232,7 +232,7 @@ docker compose up -d --build
 
 - 默认 `pairlists` 为 **`NewCoinWeightedVolumePairList`**：每 10 分钟用 **1 次全市场 `fetchTickers` 请求**（约 10–20 秒、零限流），从 OKX 全部 USDT 永续中选出 top 40
 - **新币加权**：上市 ≤90 天的标的按成交额加权（最高 ×9），新上市的标的只要开始有量，**最快 10 分钟自动进入白名单**，不再漏掉新币
-- **山寨倾向**：排除主流大币（BTC/ETH/SOL/XRP/DOGE/ADA/BNB/LTC/BCH/TRX/DOT/LINK/AVAX/ATOM/UNI/ETC/XLM）与股票代币、商品代币（`exclude_majors` / `exclude_stocks_commodities`）
+- **主流/山寨一视同仁**：不排除主流大币，只要成交额（或新币加权后）进入前 40 即可入选（`exclude_majors: false`）；仅剔除股票代币与商品代币（`exclude_stocks_commodities: true`）
 - WS 频道预算：40 标的 × 5 周期 = 200 ≤ 240（每连接上限）
 - 可调参数（见 `docs/PATCHES.md`）：`number_assets`（≤48）、`refresh_period`（默认 600 秒）、`new_coin_days`（默认 90）、`new_coin_boost`（默认 8）、`exclude_majors` / `exclude_stocks_commodities`
 
