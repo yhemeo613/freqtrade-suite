@@ -100,7 +100,7 @@
       "method": "NewCoinWeightedVolumePairList",
       "number_assets": 40,
       "sort_key": "quoteVolume",
-      "refresh_period": 600,
+      "refresh_period": 900,
       "new_coin_days": 90,
       "new_coin_boost": 8,
       "exclude_majors": false,
