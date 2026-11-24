@@ -5,8 +5,6 @@ import { useRouter } from "vue-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Moon, Sun, Pencil, Trash2, LogOut, Bot, Cpu } from "lucide-vue-next";
@@ -180,17 +178,8 @@ async function switchBot(botId: string) {
                         "
                     />
                 </div>
-                <div class="flex items-center justify-between">
-                    <Label for="st-mobile" class="text-sm">移动端卡片模式</Label>
-                    <Switch
-                        id="st-mobile"
-                        v-model="settingsStore.mobileCardMode"
-                        @update:model-value="saveSettings"
-                    />
-                </div>
             </CardContent>
         </Card>
-
         <!-- 机器人管理 -->
         <Card>
             <CardHeader class="pb-3">

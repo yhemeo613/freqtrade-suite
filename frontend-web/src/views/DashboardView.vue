@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, watch, onMounted, onUnmounted } from "vue";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -42,6 +42,23 @@ async function load() {
     if (++pollCount % 6 === 0) void loadWalletCurve();
 }
 
+function walletChartOptions() {
+    const dark = settingsStore.theme === "dark";
+    return {
+        layout: {
+            background: { type: ColorType.Solid, color: "transparent" },
+            textColor: dark ? "#9ca3af" : "#6b7280"
+        },
+        grid: {
+            vertLines: { color: "transparent" },
+            horzLines: { color: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }
+        },
+        timeScale: { timeVisible: true, secondsVisible: false },
+        height: 220,
+        autoSize: true
+    };
+}
+
 async function loadWalletCurve() {
     const res = await runApi(() => getClient().get("/api/v1/historic_balance"), true);
     if (!res || !res.data?.length || !walletEl.value) return;
@@ -49,22 +66,7 @@ async function loadWalletCurve() {
     const iDate = cols.indexOf("date");
     const iTotal = cols.lastIndexOf("total");
     if (iDate < 0 || iTotal < 0) return;
-    const dark = settingsStore.theme === "dark";
-    walletChart =
-        walletChart ??
-        createChart(walletEl.value as HTMLElement, {
-            layout: {
-                background: { type: ColorType.Solid, color: "transparent" },
-                textColor: dark ? "#9ca3af" : "#6b7280"
-            },
-            grid: {
-                vertLines: { color: "transparent" },
-                horzLines: { color: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }
-            },
-            timeScale: { timeVisible: true, secondsVisible: false },
-            height: 220,
-            autoSize: true
-        });
+    walletChart = walletChart ?? createChart(walletEl.value as HTMLElement, walletChartOptions());
     walletSeries =
         walletSeries ??
         walletChart.addSeries(AreaSeries, {
@@ -94,6 +96,12 @@ onUnmounted(() => {
     walletChart = null;
     walletSeries = null;
 });
+
+// 切换亮/暗色时同步资产曲线配色（与 ChartsView 行为一致，避免亮色下文字不可读）
+watch(
+    () => settingsStore.theme,
+    () => walletChart?.applyOptions(walletChartOptions())
+);
 
 usePolling(load);
 

@@ -2,6 +2,18 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有显著变更都会记录在此文件中。
 
+## [v1.0.4] - 2026-11-24
+
+### 修复
+
+- **WebSocket 鉴权重连风暴**：服务端持续拒绝（token 刷新后仍 4401/4001/1008）时，原逻辑每次都会「刷新 token → 立即重连」，形成无退避的快速重连循环；现改为连续 3 次鉴权失败后走指数退避，连接成功后重置计数
+- **图表主题不随全局切换**：仪表盘资产曲线与回测深度分析（K 线图 / 钱包曲线）在创建时读取一次主题色，切换亮/暗色后仍保持旧配色（亮色下文字不可读）；现改为监听 `settingsStore.theme` 即时重刷，与 ChartsView 行为一致；BacktestAnalysis 的取色源统一改为 `settingsStore.theme`（原来读 DOM class）
+- **移除无效设置项「移动端卡片模式」**：`mobileCardMode` 只写入 localStorage 但全仓库无任何消费方，设置页的开关是一个「看着生效、实际无效」的控件；连同 store 字段与设置页开关一并删除，避免误导用户
+
+### 测试
+
+- 新增 `FreqWs` 重连行为 5 个用例（fake WebSocket + fake timers：刷新成功即重连、3 次鉴权失败后退避、刷新失败直接退避、连接成功重置计数、普通断线走退避）；单测总数 70 → **75**（8 文件）
+
 ## [v1.0.2] - 2026-11-24
 
 ### 修复
@@ -184,7 +196,7 @@
 - 107 个组件从 `cn` 包迁移到本地 `@/lib/utils`，卸载 `cn` 依赖(#9)
 - Nginx gzip 压缩 + 静态资源 30 天缓存；Telegram 周期统计文案拼接修复
 
-[v1.0.2]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.2
+[v1.0.4]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.4
 [v1.0.3]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.3
 [v1.0.2]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.2
 [v1.0.1]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.1

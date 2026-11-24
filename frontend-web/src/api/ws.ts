@@ -41,6 +41,8 @@ export class FreqWs {
     private ws: WebSocket | null = null;
     private stopped = false;
     private retry = 0;
+    /** 连续鉴权失败计数：服务端持续拒绝（如 token 刷新后仍被拒）时放弃"刷新即重连"，改用指数退避，避免重连风暴 */
+    private authFailures = 0;
     private timer: ReturnType<typeof setTimeout> | null = null;
 
     constructor(private handlers: WsHandler[]) {
@@ -72,6 +74,7 @@ export class FreqWs {
         }
         this.ws.onopen = () => {
             this.retry = 0;
+            this.authFailures = 0;
         };
         this.ws.onmessage = (ev) => {
             try {
@@ -85,6 +88,12 @@ export class FreqWs {
             if (this.stopped) return;
             // 鉴权失败码(401/4401/1008):先刷新 token 再重连,否则退避会因同一过期 token 永久劣化
             if (ev.code === 4401 || ev.code === 4001 || ev.code === 1008) {
+                this.authFailures++;
+                if (this.authFailures >= 3) {
+                    // 连续多次鉴权失败（刷新后仍被拒）：走指数退避，避免"刷新→立即重连"死循环
+                    this.scheduleRetry();
+                    return;
+                }
                 void this.refreshAndReconnect();
                 return;
             }
