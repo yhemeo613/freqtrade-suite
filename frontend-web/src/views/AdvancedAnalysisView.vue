@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Microscope, ArrowLeftRight } from "lucide-vue-next";
 import { getClient } from "@/api/client";
 import { runApi, api } from "@/composables/useBotData";
+import { classifyJob, jobErrorText, outcomeLabel } from "@/lib/jobStatus";
 import type { AnalysisJobResult } from "@/api/types";
 
 const strategy = ref("");
@@ -26,7 +27,7 @@ function analysisStatusText(raw: { status_msg?: string } | null): string {
     return s
         .replace(/^Analysis failed with /, "分析失败：")
         .replace(/^Analysis running$/, "分析进行中")
-        .replace(/^Analysis finished$/, "分析完成")
+        .replace(/^Analysis (finished|ended)$/, "分析完成")
         .replace(/^Analysis pending$/, "分析排队中");
 }
 
@@ -59,6 +60,10 @@ onUnmounted(() => {
 function startPolling(jobId: string, kind: "recursive" | "lookahead") {
     const getter = () =>
         kind === "recursive" ? api.recursiveAnalysisGet(jobId) : api.lookaheadAnalysisGet(jobId);
+    const setRunning = (v: boolean) => {
+        if (kind === "recursive") recRunning.value = v;
+        else laRunning.value = v;
+    };
     const timer = setInterval(async () => {
         const res = await runApi(() => getter(), true);
         if (!res) {
@@ -66,6 +71,8 @@ function startPolling(jobId: string, kind: "recursive" | "lookahead") {
             if (pollFailures[kind] >= 5) {
                 clearInterval(timer);
                 pollFailures[kind] = 0;
+                // 停止轮询时必须解除"分析中"锁定，否则按钮会永久禁用
+                setRunning(false);
                 toast.error("轮询失败次数过多，已停止");
             }
             return;
@@ -73,13 +80,22 @@ function startPolling(jobId: string, kind: "recursive" | "lookahead") {
         pollFailures[kind] = 0;
         if (kind === "recursive") recResult.value = res;
         else laResult.value = res;
-        const running = res.status === "running" || res.status === "pending";
-        if (kind === "recursive") recRunning.value = running;
-        else laRunning.value = running;
-        if (!running) {
+        // 失败必须单独判定：freqtrade 分析失败返回 status="error"，running 同样为 false，
+        // 只按 running 判断会把失败误报成"分析完成"
+        const outcome = classifyJob(res);
+        if (outcome === "error") {
             clearInterval(timer);
-            toast.success(kind === "recursive" ? "Recursive 分析完成" : "Lookahead 分析完成");
+            setRunning(false);
+            toast.error(jobErrorText(res, "分析失败"));
+            return;
         }
+        if (outcome === "success") {
+            clearInterval(timer);
+            setRunning(false);
+            toast.success(kind === "recursive" ? "Recursive 分析完成" : "Lookahead 分析完成");
+            return;
+        }
+        setRunning(true);
     }, 3000);
     pollTimers.push(timer);
 }
@@ -189,8 +205,12 @@ async function startLookahead() {
                             {{ recRunning ? "分析中…" : "开始分析" }}
                         </Button>
                         <div v-if="recResult" class="rounded-md border bg-muted/30 p-3 text-sm">
-                            <div :class="recResult.status === 'error' ? 'text-destructive' : ''">
-                                状态：{{ recResult.status
+                            <div
+                                :class="
+                                    classifyJob(recResult) === 'error' ? 'text-destructive' : ''
+                                "
+                            >
+                                状态：{{ outcomeLabel(classifyJob(recResult))
                                 }}<template v-if="recResult.status_msg">
                                     · {{ analysisStatusText(recResult) }}</template
                                 >
@@ -217,8 +237,10 @@ async function startLookahead() {
                             {{ laRunning ? "分析中…" : "开始分析" }}
                         </Button>
                         <div v-if="laResult" class="rounded-md border bg-muted/30 p-3 text-sm">
-                            <div :class="laResult.status === 'error' ? 'text-destructive' : ''">
-                                状态：{{ laResult.status
+                            <div
+                                :class="classifyJob(laResult) === 'error' ? 'text-destructive' : ''"
+                            >
+                                状态：{{ outcomeLabel(classifyJob(laResult))
                                 }}<template v-if="laResult.status_msg">
                                     · {{ analysisStatusText(laResult) }}</template
                                 >
