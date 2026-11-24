@@ -4,14 +4,11 @@ interface SettingsState {
     theme: "light" | "dark";
     /** 刷新间隔（毫秒） */
     refreshIntervalMs: number;
-    /** 移动端卡片模式 */
-    mobileCardMode: boolean;
 }
 
 const DEFAULTS: SettingsState = {
     theme: "dark",
-    refreshIntervalMs: 10_000,
-    mobileCardMode: true
+    refreshIntervalMs: 10_000
 };
 
 function load(): SettingsState {
