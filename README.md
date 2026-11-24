@@ -2,8 +2,8 @@
 
 > 基于 [freqtrade](https://github.com/freqtrade/freqtrade)（2026.11-dev）的完整中文化部署方案：
 > **汉化服务端 + 自研中文 Web 控制台 + Nginx 同源分流 + Docker Compose 一键启动**。
-> 默认以 OKX **永续合约模拟盘**（dry_run，10,000 USDT，最多 6 仓，**40 个主流加密货币永续**）+ NostalgiaForInfinityX8 策略运行。
-> 标的池为静态白名单（**已剔除股票代币与商品代币**）；每连接最多 240 个 WS 订阅频道，NFI 每标的需 5 个周期（5m/15m/1h/4h/1d），40 × 5 = 200 频道。
+> 默认以 OKX **永续合约模拟盘**（dry_run，10,000 USDT，最多 6 仓，**40 个山寨币永续**）+ NostalgiaForInfinityX8 策略运行。
+> 标的池为静态白名单，**已排除 BTC/ETH/SOL 等主流大币**，并剔除股票代币与商品代币；每连接最多 240 个 WS 订阅频道，NFI 每标的需 5 个周期（5m/15m/1h/4h/1d），40 × 5 = 200 频道。
 
 ![freqtrade](https://img.shields.io/badge/freqtrade-2026.11--dev-1f6feb?style=flat-square)
 ![strategy](https://img.shields.io/badge/strategy-NostalgiaForInfinityX8-8b5cf6?style=flat-square)
@@ -211,7 +211,7 @@ docker compose up -d --build
 | `stake_amount` | 单仓保证金，默认 `unlimited`（NFI 推荐口径：每仓 = 可用资金 / 最大持仓数，补仓使用剩余保证金） |
 | `max_open_trades` | 最大同时持仓数，默认 `6`（NFI 官方建议 6-12 个持仓位） |
 | `trading_mode` / `margin_mode` | 交易模式，默认 `futures`（永续合约）/ `isolated`（逐仓） |
-| `exchange.pair_whitelist` | 静态白名单：默认 **40 个主流加密货币永续**（已剔除股票代币/商品代币） |
+| `exchange.pair_whitelist` | 静态白名单：默认 **40 个山寨币永续**（按 OKX 24h 成交额排序、上市 ≥90 天，排除主流大币/股票代币/商品代币） |
 | `pairlists` | `StaticPairList`（静态白名单）；如需全市场动态排名可选 `VolumePairList`（见下方说明，默认不启用） |
 | `exchange.name` | 默认 `okx`，可替换为 freqtrade 支持的其他交易所 |
 | `exchange.ccxt_config` | REST 限流参数，默认 `{"enableRateLimit": true, "rateLimit": 200}`（遵守交易所请求频率） |
@@ -230,8 +230,8 @@ docker compose up -d --build
 
 ### 标的池（静态白名单）
 
-- 默认 `pairlists` 为 `StaticPairList`，`exchange.pair_whitelist` 固定 **40 个主流加密货币永续**（BTC、ETH、SOL、…、BNB、OKB、ENA、WLD）
-- **已剔除股票代币**（NVDA / QQQ / SOXL / MSTR 等）**与商品代币**（XAU / XAG / XPT 等），只交易加密货币
+- 默认 `pairlists` 为 `StaticPairList`，`exchange.pair_whitelist` 固定 **40 个山寨币永续**（ZEC、HYPE、PEPE、NEAR、SUI、WLD、ENA、FIL、AAVE、INJ、ARB、TAO、ONDO、ICP、JUP、SHIB、BERA 等）
+- 选币规则：OKX USDT 永续 → 加密货币类 → 上市 ≥90 天 → 按 24h 成交额排序取前 40 → **排除主流大币**（BTC / ETH / SOL / XRP / DOGE / ADA / BNB / LTC / BCH / TRX / DOT / LINK / AVAX / ATOM / UNI / ETC / XLM）与股票/商品代币
 - WS 频道预算：40 标的 × 5 周期 = 200 ≤ 240（每连接上限）
 - 新增/替换标的：直接编辑 `exchange.pair_whitelist`，建议保持 ≤ 48 个（48 × 5 = 240）
 - 可选能力：如需要全市场动态排名，可把 `pairlists` 改为 `VolumePairList`（ticker 模式，每 30 分钟 1 次全市场请求；实现与配置见 `docs/PATCHES.md`），默认关闭
