@@ -2840,7 +2840,8 @@ class Exchange(LoggingMixin):
                 logger.debug(f"reuse watch result for {pair}, {timeframe}, {last_refresh_time}")
 
                 return self._exchange_ws.get_ohlcv(pair, timeframe, candle_type, candle_ts)
-            logger.info(
+            # 本地补丁：WS 数据未就绪时回退 REST 属正常兜底，降为 DEBUG 避免日志噪声
+            logger.debug(
                 f"无法复用 {pair} {timeframe} 的行情订阅，回退到 REST API。"
                 f"{candle_ts < last_refresh_time}, {candle_ts}, {last_refresh_time}, "
                 f"{format_ms_time(candle_ts)}, {format_ms_time(last_refresh_time)} "
