@@ -17,6 +17,13 @@ import {
     TableRow
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from "@/components/ui/select";
 import { Play, Square, History as HistoryIcon } from "lucide-vue-next";
 import BacktestAnalysis from "@/components/ft/BacktestAnalysis.vue";
 import { getClient } from "@/api/client";
@@ -38,6 +45,24 @@ const step = ref("");
 const result = ref<BacktestResult | null>(null);
 const resultFilename = ref("");
 const resultStrategy = ref("");
+
+/* ---------- 策略列表（webserver 专属端点，加载失败时保留自由输入） ---------- */
+const strategies = ref<string[]>([]);
+const strategiesLoaded = ref(false);
+
+async function loadStrategies() {
+    const st = await runApi(() => getClient().btGet("/api/v1/strategies"), true);
+    strategiesLoaded.value = true;
+    if (st) {
+        strategies.value = (st.strategies ?? st ?? []).map((x: string | { name?: string }) =>
+            typeof x === "string" ? x : (x.name ?? "")
+        );
+        // 当前配置的策略不在列表（如自定义策略文件）时，保留已选值
+        if (strategies.value.length && !strategies.value.includes(strategy.value)) {
+            strategies.value.push(strategy.value);
+        }
+    }
+}
 
 /* ---------- 历史 ---------- */
 const history = ref<BacktestHistoryItem[]>([]);
@@ -67,6 +92,7 @@ async function loadStrategy() {
 
 void loadStrategy();
 void loadHistory();
+void loadStrategies();
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -163,7 +189,22 @@ onUnmounted(stopPoll);
                 <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <div class="space-y-1.5">
                         <Label>策略</Label>
-                        <Input v-model="strategy" placeholder="NostalgiaForInfinityX8" />
+                        <Select v-if="strategies.length" v-model="strategy">
+                            <SelectTrigger class="w-full">
+                                <SelectValue placeholder="选择策略" />
+                            </SelectTrigger>
+                            <SelectContent class="max-h-64">
+                                <SelectItem v-for="s in strategies" :key="s" :value="s">{{
+                                    s
+                                }}</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Input
+                            v-else
+                            v-model="strategy"
+                            placeholder="NostalgiaForInfinityX8"
+                            :disabled="!strategiesLoaded"
+                        />
                     </div>
                     <div class="space-y-1.5">
                         <Label>时间范围</Label>

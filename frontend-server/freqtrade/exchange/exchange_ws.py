@@ -19,6 +19,20 @@ from freqtrade.util import dt_ts, format_ms_time, format_ms_time_det
 logger = logging.getLogger(__name__)
 
 
+def _config_int(config: Config, key: str, default: int, label: str) -> int:
+    """
+    从配置读取正整数配额键；缺失/非法时回退默认值，避免配置写错导致启动失败。
+    """
+    try:
+        value = int(config.get(key, default))
+        if value > 0:
+            return value
+        logger.warning(f"{label}配置 {key} 必须为正整数，使用默认值 {default}")
+    except (TypeError, ValueError):
+        logger.warning(f"{label}配置 {key} 非法，使用默认值 {default}")
+    return default
+
+
 class ExchangeWS:
     # TODO: should either be configurable or use the main timeframe.
     ob_timeout = 60  # 1m
@@ -26,9 +40,11 @@ class ExchangeWS:
     ob_snapshot_timeout = 1.0
     # 交易所 WS 订阅配额：OKX 官方限制每连接 subscribe+unsubscribe+login 共 480 次/小时。
     # 超出配额时跳过订阅，上层 get_ohlcv 会自动回退 REST（REST 侧由 ccxt rateLimit 限流）。
+    # 默认值可通过 config 键 `exchange_ws_sub_limit_per_hour` 覆盖。
     ws_sub_limit_per_hour = 480
     # 交易所 WS 单连接频道上限：OKX 每连接最多 240 个订阅频道。
     # 超过时不再订阅新频道（回退 REST），避免对端以 1006 关闭连接。
+    # 默认值可通过 config 键 `exchange_ws_max_channels` 覆盖。
     ws_max_channels = 240
     # 交易所 WS 写入频率：OKX 约 3 条消息/秒 → 订阅请求至少间隔 0.34s
     ws_sub_min_interval = 0.34
@@ -48,6 +64,14 @@ class ExchangeWS:
         self._ws_sub_lock = RLock()
         self._ws_sub_history: deque[float] = deque()
         self._ws_rate_limited_until = 0.0
+
+        # 从配置覆盖 WS 配额（默认值不变，兼容旧配置；非法值回退默认）
+        self.ws_sub_limit_per_hour = _config_int(
+            config, "exchange_ws_sub_limit_per_hour", self.ws_sub_limit_per_hour, "WS 订阅配额"
+        )
+        self.ws_max_channels = _config_int(
+            config, "exchange_ws_max_channels", self.ws_max_channels, "WS 单连接频道上限"
+        )
 
         self._klines_watching: set[PairWithTimeframe] = set()
         self._klines_scheduled: set[PairWithTimeframe] = set()
