@@ -31,6 +31,8 @@
 |---|---|---|
 | `freqtrade/rpc/telegram.py` | `ft-selfheal` 轮询看门狗 | 重建 Application、滑动窗口重启预算（8 次 / 30 分钟）。可通过 `telegram.selfheal: false` 关闭（默认开启），与纯文案翻译分离；关闭后也不再有额外的健康检查 API 调用。`_mark_update_seen` 必须为协程（async），否则每条消息触发 `TypeError: 'NoneType' object can't be awaited` |
 | `freqtrade/exchange/exchange_ws.py` | WS 订阅限流合规 | 订阅请求按交易所配额节流：480 次/小时（OKX subscribe+unsubscribe+login 限制）+ 3 条/秒写入间隔 + 限流退避 60s + **单连接频道上限 240**（OKX 限制，超出自动回退 REST），避免 `60014 Requests too frequent` 与 1006 断连风暴。两个配额默认值与 OKX 官方限制一致，可用 config 键 `exchange_ws_sub_limit_per_hour` / `exchange_ws_max_channels` 覆盖（换交易所或调整策略周期数时无需改代码） |
+| `freqtrade/exchange/okx.py` | 期货 tickers 动态标的池放行 | `_ft_has_futures["tickers_have_quoteVolume"] = True`，允许 `VolumePairList` 在 OKX 期货上使用 ticker 模式（1 次全市场请求完成成交额排名，避免逐标的拉 K 线触发 50011） |
+| `freqtrade/plugins/pairlist/VolumePairList.py` | `quoteVolume` 兜底计算 | OKX 期货 tickers 不提供 `quoteVolume`，用 `baseVolume × last` 兜底；并放宽 ticker 模式过滤条件（有 `baseVolume` 即可入选） |
 | `freqtrade/configuration/config_validation.py` | 占位符凭据 fail-fast | 拒绝 `jwt_secret_key` / `password` 含「请替换」的模板占位符配置，防止以"已知密钥 + 已知口令"运行 API |
 
 ## 三、升级 freqtrade 时的重放步骤

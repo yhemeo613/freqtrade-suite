@@ -2,6 +2,17 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有显著变更都会记录在此文件中。
 
+## [v1.1.0] - 2026-11-24
+
+### 新增
+
+- **全市场动态标的池**：`pairlists` 改为 `VolumePairList`（ticker 模式），每 30 分钟用 **1 次全市场 tickers 请求**按 24h 成交额选出 top 40，覆盖 OKX 全部 USDT 永续（加密货币 + 股票代币 + 商品代币，**不做类别过滤**）
+- **现货模式示例**：新增 `config.spot.example.json`，与永续模式共用同一套动态标的池与限流策略
+
+### 修复
+
+- OKX 期货 tickers 不提供 `quoteVolume`：`VolumePairList` 增加 `baseVolume × last` 兜底计算，`okx.py` 放行期货 ticker 模式，避免逐标的拉 K 线触发 50011 限流（全市场扫描 93 秒 → 10–20 秒、限流错误归零）
+
 ## [v1.0.6] - 2026-11-24
 
 ### 修复

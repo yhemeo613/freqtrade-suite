@@ -1,0 +1,135 @@
+{
+  "max_open_trades": 6,
+  "stake_currency": "USDT",
+  "stake_amount": "unlimited",
+  "tradable_balance_ratio": 0.99,
+  "dry_run": true,
+  "dry_run_wallet": 10000,
+  "db_url": "sqlite:////freqtrade/user_data/tradesv3.spot.sqlite",
+  "cancel_open_orders_on_exit": false,
+  "trading_mode": "spot",
+  "margin_mode": "",
+  "order_types": {
+    "entry": "limit",
+    "exit": "limit",
+    "emergency_exit": "market",
+    "force_exit": "market",
+    "force_entry": "market",
+    "stoploss": "market",
+    "stoploss_on_exchange": false
+  },
+  "unfilledtimeout": {
+    "entry": 10,
+    "exit": 10,
+    "exit_timeout_count": 0,
+    "unit": "minutes"
+  },
+  "entry_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "price_last_balance": 0.0,
+    "check_depth_of_market": {
+      "enabled": false,
+      "bids_to_ask_delta": 1
+    }
+  },
+  "exit_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "price_last_balance": 0.0
+  },
+  "exchange": {
+    "name": "okx",
+    "key": "",
+    "secret": "",
+    "password": "",
+    "ccxt_config": {
+      "enableRateLimit": true,
+      "rateLimit": 200
+    },
+    "ccxt_async_config": {},
+    "pair_whitelist": [
+      "BTC/USDT",
+      "ETH/USDT",
+      "SOL/USDT",
+      "XRP/USDT",
+      "DOGE/USDT",
+      "ADA/USDT",
+      "AVAX/USDT",
+      "LINK/USDT",
+      "DOT/USDT",
+      "LTC/USDT",
+      "BCH/USDT",
+      "TRX/USDT",
+      "SUI/USDT",
+      "APT/USDT",
+      "ARB/USDT",
+      "OP/USDT",
+      "ATOM/USDT",
+      "NEAR/USDT",
+      "ETC/USDT",
+      "XLM/USDT",
+      "HBAR/USDT",
+      "ICP/USDT",
+      "ALGO/USDT",
+      "SEI/USDT",
+      "UNI/USDT",
+      "AAVE/USDT",
+      "CRV/USDT",
+      "LDO/USDT",
+      "ONDO/USDT",
+      "JUP/USDT",
+      "RENDER/USDT",
+      "FIL/USDT",
+      "PEPE/USDT",
+      "SHIB/USDT",
+      "WIF/USDT",
+      "TAO/USDT",
+      "BNB/USDT",
+      "OKB/USDT",
+      "ENA/USDT",
+      "WLD/USDT"
+    ]
+  },
+  "exchange_ws_sub_limit_per_hour": 480,
+  "exchange_ws_max_channels": 240,
+  "pairlists": [
+    {
+      "method": "VolumePairList",
+      "number_assets": 40,
+      "sort_key": "quoteVolume",
+      "refresh_period": 1800
+    }
+  ],
+  "initial_state": "running",
+  "force_entry_enable": true,
+  "internals": {
+    "process_throttle_secs": 5
+  },
+  "api_server": {
+    "enabled": true,
+    "listen_ip_address": "0.0.0.0",
+    "listen_port": 8080,
+    "enable_openapi": false,
+    "jwt_secret_key": "请替换为随机字符串（例如 openssl rand -hex 32）",
+    "CORS_origins": [
+      "http://localhost:5173",
+      "http://localhost:8080",
+      "http://localhost:8081",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:8080",
+      "http://127.0.0.1:8081"
+    ],
+    "username": "freqtrader",
+    "password": "请替换为强密码"
+  },
+  "strategy": "NostalgiaForInfinityX8",
+  "telegram": {
+    "enabled": false,
+    "token": "",
+    "chat_id": "",
+    "selfheal": true
+  }
+}
