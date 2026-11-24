@@ -31,10 +31,12 @@ import { runApi, type Trade } from "@/composables/useBotData";
 import type { BacktestResult, BacktestHistoryItem } from "@/api/types";
 import { fmtPct, fmtCoin, profitColor, exitReasonZh, directionZh, fmtDate } from "@/lib/format";
 import { classifyJob, jobErrorText } from "@/lib/jobStatus";
+import { defaultTimerange } from "@/lib/parse";
 
 /* ---------- 表单 ---------- */
 const strategy = ref("");
-const timerange = ref("20261020-");
+// 滚动默认值（30 天前至今），避免硬编码日期随时间过期
+const timerange = ref(defaultTimerange(30));
 const timeframe = ref("5m");
 const enableProtections = ref(false);
 
