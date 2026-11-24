@@ -93,6 +93,8 @@
       "WLD/USDT:USDT"
     ]
   },
+  "exchange_ws_sub_limit_per_hour": 480,
+  "exchange_ws_max_channels": 240,
   "pairlists": [
     {
       "method": "StaticPairList"
