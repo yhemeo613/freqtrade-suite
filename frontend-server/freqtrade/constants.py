@@ -77,6 +77,8 @@ AVAILABLE_PAIRLISTS = [
     "ShuffleFilter",
     "SpreadFilter",
     "VolatilityFilter",
+    # 本地自定义插件：新币加权动态标的池（见 plugins/pairlist/NewCoinWeightedVolumePairList.py）
+    "NewCoinWeightedVolumePairList",
 ]
 AVAILABLE_DATAHANDLERS = ["json", "jsongz", "feather", "parquet"]
 BACKTEST_BREAKDOWNS = ["day", "week", "month", "year", "weekday"]
