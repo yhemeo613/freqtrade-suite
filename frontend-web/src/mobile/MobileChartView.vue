@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
 import { Popup, Picker, Tabs, Tab, Button } from "vant";
 import {
     createChart,
@@ -23,6 +23,9 @@ const timeframe = ref("5m");
 const loading = ref(false);
 const showPicker = ref(false);
 const pickerValue = ref<string[]>([]);
+
+// Vant 4 Picker 的 columns 是 PickerOption[]（{text, value}），不是 Vant 2 的 {values}
+const pairOptions = computed(() => whitelist.value.map((p) => ({ text: p, value: p })));
 
 const chartEl = ref<HTMLElement | null>(null);
 let chart: IChartApi | null = null;
@@ -190,7 +193,7 @@ const pairName = () => pair.value.split("/")[0] || "—";
 
         <Popup v-model:show="showPicker" position="bottom" round>
             <Picker
-                :columns="[{ values: whitelist }]"
+                :columns="pairOptions"
                 :model-value="pickerValue"
                 title="选择币对"
                 @confirm="onPick"
