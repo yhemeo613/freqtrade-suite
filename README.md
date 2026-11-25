@@ -2,8 +2,8 @@
 
 > 基于 [freqtrade](https://github.com/freqtrade/freqtrade)（2026.11-dev）的完整中文化部署方案：
 > **汉化服务端 + 自研中文 Web 控制台 + Nginx 同源分流 + Docker Compose 一键启动**。
-> 默认以 OKX **永续合约模拟盘**（dry_run，10,000 USDT，最多 6 仓，**40 个山寨币永续**）+ NostalgiaForInfinityX8 策略运行。
-> 标的池为**新币加权动态池**（每 10 分钟 1 次全市场扫描，剔除股票/商品代币，**主流币与山寨币一视同仁、新上市的标的自动纳入**）；每连接最多 240 个 WS 订阅频道，NFI 每标的需 5 个周期（5m/15m/1h/4h/1d），40 × 5 = 200 频道。
+> 默认以 OKX **永续合约模拟盘**（dry_run，10,000 USDT，最多 6 仓）+ NostalgiaForInfinityX8 策略运行。
+> 标的池为**静态池（山寨为主、主流并行）**：40 个 USDT 永续 = 14 个主流（BTC/ETH/SOL/XRP/DOGE/BNB/ADA/LINK/AVAX/LTC/BCH/DOT/UNI/ATOM）+ 26 个山寨；`StaticPairList` 固定不变，回测与实盘一致；每连接最多 240 个 WS 订阅频道，NFI 每标的需 5 个周期（5m/15m/1h/4h/1d），40 × 5 = 200 频道。想自动追踪成交量/新币可切换可选动态池（见「标的池」一节）。
 
 ![freqtrade](https://img.shields.io/badge/freqtrade-2026.11--dev-1f6feb?style=flat-square)
 ![strategy](https://img.shields.io/badge/strategy-NostalgiaForInfinityX8-8b5cf6?style=flat-square)
@@ -209,10 +209,10 @@ docker compose up -d --build
 | `dry_run` | `true` 为模拟盘；切换实盘前务必确认策略与风控 |
 | `dry_run_wallet` | 模拟盘初始资金，默认 `10000`（USDT） |
 | `stake_amount` | 单仓保证金，默认 `unlimited`（NFI 推荐口径：每仓 = 可用资金 / 最大持仓数，补仓使用剩余保证金） |
-| `max_open_trades` | 最大同时持仓数，默认 `6`（NFI 官方建议 6-12 个持仓位） |
+| `max_open_trades` | 最大同时持仓数，默认 `3`（`stake_amount: unlimited` 下每仓保证金 = 可用资金 / 该值；40 池回测：1 仓 +236%/回撤 0%、2 仓 +92%/2.68%、3 仓 +62%/1.79%、6 仓 +32%/0.90%、12 仓 +21%/0.45%——仓位越少单仓越大、收益与回撤同步放大） |
 | `trading_mode` / `margin_mode` | 交易模式，默认 `futures`（永续合约）/ `isolated`（逐仓） |
-| `exchange.pair_whitelist` | 静态备用白名单（动态标的池启用时被 `pairlists` 覆盖） |
-| `pairlists` | **新币加权动态标的池**：`NewCoinWeightedVolumePairList`（ticker 模式，每 10 分钟 1 次全市场请求；剔除股票/商品代币，主流币与山寨币均可入选、新币加权） |
+| `exchange.pair_whitelist` | 静态白名单：**40 个 USDT 永续（14 主流 + 26 山寨，山寨为主）**；`StaticPairList` 直接使用该列表 |
+| `pairlists` | 默认 **`StaticPairList`**（静态标的池，稳定、历史充足、可与回测一一对应）；想自动追踪成交量/新币时改用 `NewCoinWeightedVolumePairList`（见下节） |
 | `exchange.name` | 默认 `okx`，可替换为 freqtrade 支持的其他交易所 |
 | `exchange.ccxt_config` | REST 限流参数，默认 `{"enableRateLimit": true, "rateLimit": 200}`（遵守交易所请求频率） |
 | `exchange.enable_ws` | WebSocket 开关（默认开启）；WS 订阅按交易所配额（OKX 480 次/小时）自动节流，超配额通道自动回退 REST |
@@ -228,13 +228,13 @@ docker compose up -d --build
 
 `config_ws.json` 仅覆盖 webserver 的监听端口（`8081`），其余配置继承 `config.json`。
 
-### 标的池（新币加权动态池）
+### 标的池（静态池：山寨倾向 + 主流并行）
 
-- 默认 `pairlists` 为 **`NewCoinWeightedVolumePairList`**：每 10 分钟用 **1 次全市场 `fetchTickers` 请求**（约 10–20 秒、零限流），从 OKX 全部 USDT 永续中选出 top 40
-- **新币加权**：上市 ≤90 天的标的按成交额加权（最高 ×9），新上市的标的只要开始有量，**最快 10 分钟自动进入白名单**，不再漏掉新币
-- **主流/山寨一视同仁**：不排除主流大币，只要成交额（或新币加权后）进入前 40 即可入选（`exclude_majors: false`）；仅剔除股票代币与商品代币（`exclude_stocks_commodities: true`）
+- 默认 `pairlists` 为 **`StaticPairList`**：固定 40 个 USDT 永续，**14 个主流（BTC/ETH/SOL/XRP/DOGE/BNB/ADA/LINK/AVAX/LTC/BCH/DOT/UNI/ATOM）+ 26 个山寨（SUI/APT/ARB/OP/INJ/SEI/TIA/JUP/WLD/ENA/ONDO/PEPE/SHIB/WIF/FIL/AAVE/CRV/LDO/HBAR/ICP/ALGO/NEAR/TAO/HYPE/ZEC/TRUMP）**
+- **为什么用静态池**：动态池每 15 分钟换池，而 NFI 需要 480–800 根 5m K 线（约 2–3 天）历史才能计算指标；新进入池子的标的往往历史不足、无法入场。静态池历史稳定，且**回测与实盘完全一致**（动态池无法参加 freqtrade 回测）
+- 山寨占比约 65%，符合「山寨为主、主流不放过」；如需调整，直接改 `exchange.pair_whitelist`
 - WS 频道预算：40 标的 × 5 周期 = 200 ≤ 240（每连接上限）
-- 可调参数（见 `docs/PATCHES.md`）：`number_assets`（≤48）、`refresh_period`（默认 600 秒）、`new_coin_days`（默认 90）、`new_coin_boost`（默认 8）、`exclude_majors` / `exclude_stocks_commodities`
+- **可选动态池**：把 `pairlists` 改为 `{"method": "NewCoinWeightedVolumePairList", "number_assets": 40, "refresh_period": 900, "new_coin_days": 90, "new_coin_boost": 8, "exclude_majors": false, "exclude_stocks_commodities": true}` 即可自动按成交额选池并对新币加权（实现见 `docs/PATCHES.md`）
 
 ### 现货 / 永续模式切换
 

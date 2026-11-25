@@ -1,0 +1,69 @@
+{
+  "max_open_trades": 3,
+  "stake_currency": "USDT",
+  "stake_amount": "unlimited",
+  "tradable_balance_ratio": 0.99,
+  "dry_run": true,
+  "dry_run_wallet": 10000,
+  "trading_mode": "futures",
+  "margin_mode": "isolated",
+  "exchange": {
+    "name": "okx",
+    "key": "",
+    "secret": "",
+    "password": "",
+    "ccxt_config": {
+      "enableRateLimit": true,
+      "rateLimit": 200
+    },
+    "ccxt_async_config": {},
+    "pair_whitelist": [
+      "BTC/USDT:USDT",
+      "ETH/USDT:USDT",
+      "SOL/USDT:USDT",
+      "XRP/USDT:USDT",
+      "DOGE/USDT:USDT",
+      "BNB/USDT:USDT",
+      "ADA/USDT:USDT",
+      "LINK/USDT:USDT",
+      "AVAX/USDT:USDT",
+      "LTC/USDT:USDT",
+      "BCH/USDT:USDT",
+      "DOT/USDT:USDT",
+      "UNI/USDT:USDT",
+      "ATOM/USDT:USDT",
+      "SUI/USDT:USDT",
+      "APT/USDT:USDT",
+      "ARB/USDT:USDT",
+      "OP/USDT:USDT",
+      "INJ/USDT:USDT",
+      "SEI/USDT:USDT",
+      "TIA/USDT:USDT",
+      "JUP/USDT:USDT",
+      "WLD/USDT:USDT",
+      "ENA/USDT:USDT",
+      "ONDO/USDT:USDT",
+      "PEPE/USDT:USDT",
+      "SHIB/USDT:USDT",
+      "WIF/USDT:USDT",
+      "FIL/USDT:USDT",
+      "AAVE/USDT:USDT",
+      "CRV/USDT:USDT",
+      "LDO/USDT:USDT",
+      "HBAR/USDT:USDT",
+      "ICP/USDT:USDT",
+      "ALGO/USDT:USDT",
+      "NEAR/USDT:USDT",
+      "TAO/USDT:USDT",
+      "HYPE/USDT:USDT",
+      "ZEC/USDT:USDT",
+      "TRUMP/USDT:USDT"
+    ]
+  },
+  "pairlists": [
+    {
+      "method": "StaticPairList"
+    }
+  ],
+  "strategy": "NostalgiaForInfinityX8"
+}
