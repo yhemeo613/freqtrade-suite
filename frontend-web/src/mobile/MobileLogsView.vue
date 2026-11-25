@@ -71,11 +71,9 @@ function levelClass(level: string): string {
 
 <template>
     <div class="min-h-[70vh]">
+        <!-- DropdownItem 自带显示当前选中项文字，无需额外文本 -->
         <DropdownMenu>
-            <DropdownItem v-model:value="levelFilter" :options="levelOptions" />
-            <div class="flex flex-1 items-center px-2">
-                <span class="text-xs text-gray-500">{{ levelText }}</span>
-            </div>
+            <DropdownItem v-model:value="levelFilter" :options="levelOptions" :title="levelText" />
         </DropdownMenu>
 
         <div class="px-3 py-2">
