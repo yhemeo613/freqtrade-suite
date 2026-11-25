@@ -209,7 +209,7 @@ docker compose up -d --build
 | `dry_run` | `true` 为模拟盘；切换实盘前务必确认策略与风控 |
 | `dry_run_wallet` | 模拟盘初始资金，默认 `10000`（USDT） |
 | `stake_amount` | 单仓保证金，默认 `unlimited`（NFI 推荐口径：每仓 = 可用资金 / 最大持仓数，补仓使用剩余保证金） |
-| `max_open_trades` | 最大同时持仓数，默认 `8`（NFI 官方建议 6-12 个持仓位；`stake_amount: unlimited` 下每仓保证金 = 可用资金 / 该值，仓位越少单仓越大、收益与回撤同步放大） |
+| `max_open_trades` | 最大同时持仓数，默认 `3`（`stake_amount: unlimited` 下每仓保证金 = 可用资金 / 该值；40 池回测：1 仓 +236%/回撤 0%、2 仓 +92%/2.68%、3 仓 +62%/1.79%、6 仓 +32%/0.90%、12 仓 +21%/0.45%——仓位越少单仓越大、收益与回撤同步放大） |
 | `trading_mode` / `margin_mode` | 交易模式，默认 `futures`（永续合约）/ `isolated`（逐仓） |
 | `exchange.pair_whitelist` | 静态白名单：**40 个 USDT 永续（14 主流 + 26 山寨，山寨为主）**；`StaticPairList` 直接使用该列表 |
 | `pairlists` | 默认 **`StaticPairList`**（静态标的池，稳定、历史充足、可与回测一一对应）；想自动追踪成交量/新币时改用 `NewCoinWeightedVolumePairList`（见下节） |
