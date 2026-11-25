@@ -4,6 +4,13 @@
 
 ## [未发布]
 
+### 修复
+
+- **回测「深度分析」无内容**（三个真实缺陷）：
+  - **钱包曲线空白**：`/backtest/history/{file}/{strategy}/wallet` 返回 `{columns:["date","__date_ts","total_quote"], data:[[...]]}`，前端按对象字段 `r.date`/`r.total` 解析导致全被过滤；改为按列名解析并兼容 `total_quote`（期货）与 `total`（现货/旧版）
+  - **市场变动表错乱/空白**：`/market_change` 返回 `{columns:["date","mean","rel_mean","count","__date_ts"], data:[[...]]}`，前端当作数组渲染；改为按列解析，表格改为「时间 / 市场均值 / 相对变化 / 币对数」（仅展示 \|相对变化\| > 0.5% 的时刻）
+  - **K 线图无币对可选**：深度分析币对原仅来自回测成交记录，回测 0 交易（NFI 等选择性策略常见）时无币对可渲染；改为回退到当前白名单
+
 ### 新增
 
 - **部署 FreqAI（`Dockerfile.freqtrade` 基础镜像切换为 `stable_freqai`）**：镜像内置 `datasieve` / `lightgbm` / `xgboost` / `tensorboard` / `scikit-learn`，`/api/v1/freqaimodels` 从空列表恢复为 **10 个 FreqAI 模型**（LightGBM / XGBoost 系列）；保留 `ta` / `finta` / `scikit-optimize` 追加依赖。注意：当前 46 个内置策略均非 FreqAI 策略，训练/回测需自行添加 FreqAI 策略；`torch`（RL）属 `stable_freqairl` 变体，未包含
