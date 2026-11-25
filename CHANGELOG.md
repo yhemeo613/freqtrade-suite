@@ -2,6 +2,12 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有显著变更都会记录在此文件中。
 
+## [未发布]
+
+### 优化
+
+- **容器日志轮转 + 资源上限**（`docker-compose.yml`）：三个服务统一加 `json-file` 日志轮转（单文件 20MB、保留 3 份），防止长期运行后 Docker stdout 日志无限膨胀；`ft-trade` 内存上限 2GB / 2 CPU、`ft-ws` 1GB / 1 CPU、`ft-web` 256MB / 0.5 CPU（实测峰值约 0.6GB / 2% CPU，上限留足余量），异常场景下保护宿主机
+
 ## [v1.3.5] - 2026-11-25
 
 ### 新增
