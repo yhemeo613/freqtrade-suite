@@ -131,17 +131,23 @@ class VolumePairList(IPairList):
 
     def _ensure_quote_volume(self, tickers: list[dict]) -> None:
         """
-        本地补丁：OKX 期货 tickers 不提供 quoteVolume，用 baseVolume * last 兜底计算。
+        本地补丁：OKX 期货 tickers 不提供 quoteVolume，用成交量 × last 兜底计算。
+
+        注意成交量口径：OKX 期货 `vol24h` 是**张数**（需乘合约面值 ctVal），
+        `volCcy24h` 才是币本位成交量；直接用 baseVolume(张数) × last 会按 ctVal
+        失真（不同标的最多相差 100 倍）。因此优先用原始字段 `volCcy24h` 换算。
 
         这样 VolumePairList 可以用 tickers 模式（1 次 REST 请求拿到全市场行情）完成
         全市场成交额排名，避免逐标的拉 K 线触发 OKX 限流（50011）。
         """
         for t in tickers:
             if t.get("quoteVolume") is None:
+                info = t.get("info") or {}
+                raw_base = info.get("volCcy24h")
+                if raw_base is None:
+                    raw_base = t.get("baseVolume")
                 try:
-                    t["quoteVolume"] = float(t.get("baseVolume") or 0) * float(
-                        t.get("last") or 0
-                    )
+                    t["quoteVolume"] = float(raw_base or 0) * float(t.get("last") or 0)
                 except (TypeError, ValueError):
                     t["quoteVolume"] = 0.0
 

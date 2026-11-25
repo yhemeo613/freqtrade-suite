@@ -32,10 +32,10 @@
 | `freqtrade/rpc/telegram.py` | `ft-selfheal` 轮询看门狗 | 重建 Application、滑动窗口重启预算（8 次 / 30 分钟）。可通过 `telegram.selfheal: false` 关闭（默认开启），与纯文案翻译分离；关闭后也不再有额外的健康检查 API 调用。`_mark_update_seen` 必须为协程（async），否则每条消息触发 `TypeError: 'NoneType' object can't be awaited` |
 | `freqtrade/exchange/exchange_ws.py` | WS 订阅限流合规 | 订阅请求按交易所配额节流：480 次/小时（OKX subscribe+unsubscribe+login 限制）+ 3 条/秒写入间隔 + 限流退避 60s + **单连接频道上限 240**（OKX 限制，超出自动回退 REST），避免 `60014 Requests too frequent` 与 1006 断连风暴。两个配额默认值与 OKX 官方限制一致，可用 config 键 `exchange_ws_sub_limit_per_hour` / `exchange_ws_max_channels` 覆盖（换交易所或调整策略周期数时无需改代码） |
 | `freqtrade/exchange/okx.py` | 期货 tickers 动态标的池放行 | `_ft_has_futures["tickers_have_quoteVolume"] = True`，允许 `VolumePairList` 在 OKX 期货上使用 ticker 模式（1 次全市场请求完成成交额排名，避免逐标的拉 K 线触发 50011） |
-| `freqtrade/plugins/pairlist/VolumePairList.py` | `quoteVolume` 兜底计算 | OKX 期货 tickers 不提供 `quoteVolume`，用 `baseVolume × last` 兜底；并放宽 ticker 模式过滤条件（有 `baseVolume` 即可入选） |
+| `freqtrade/plugins/pairlist/VolumePairList.py` | `quoteVolume` 兜底计算 | OKX 期货 tickers 不提供 `quoteVolume`，优先用原始字段 `volCcy24h`（币本位成交量）× `last` 兜底（`baseVolume` 是张数，需乘合约面值，直接乘价格最多失真 100 倍）；并放宽 ticker 模式过滤条件（有 `baseVolume` 即可入选） |
 | `freqtrade/rpc/api_server/api_webserver.py` | `freqaimodels` 优雅降级 | 官方 stable 镜像缺 FreqAI 可选依赖（`datasieve`/`torch`），依赖缺失时返回空列表 + 告警，替代原先的 500 与 ASGI 异常堆栈 |
 | `freqtrade/exchange/exchange.py` | 「回退到 REST」降为 DEBUG | WS 数据未就绪时回退 REST 属正常兜底,原 INFO 日志在每次换池后产生大量噪声;降为 DEBUG,不影响数据完整性,需要排查时用 DEBUG 日志 |
-| `freqtrade/plugins/pairlist/NewCoinWeightedVolumePairList.py` | **新币加权动态标的池(新增插件)** | 继承 VolumePairList ticker 模式:1 次全市场请求,新币(上市 ≤90 天)成交额加权(最高 ×9),可排除主流大币与股票/商品代币;每 10 分钟刷新,WS 只订阅入选 40 个,零限流且不漏新币 |
+| `freqtrade/plugins/pairlist/NewCoinWeightedVolumePairList.py` | **新币加权动态标的池(新增插件)** | 继承 VolumePairList ticker 模式:1 次全市场请求,新币(上市 ≤90 天)成交额加权(最高 ×9),可排除主流大币与股票/商品代币;每 10 分钟刷新,WS 只订阅入选 40 个,零限流且不漏新币。成交额口径为 `volCcy24h × last`(币本位成交量,而非 `vol24h` 张数),加权在 tickers **副本**上计算(不修改交易所行情缓存,避免权重复利) |
 | `freqtrade/constants.py` | 注册自定义 pairlist | `AVAILABLE_PAIRLISTS` 追加 `NewCoinWeightedVolumePairList`,通过 config 校验枚举 |
 | `freqtrade/configuration/config_validation.py` | 占位符凭据 fail-fast | 拒绝 `jwt_secret_key` / `password` 含「请替换」的模板占位符配置，防止以"已知密钥 + 已知口令"运行 API |
 
