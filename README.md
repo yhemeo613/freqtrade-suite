@@ -2,7 +2,7 @@
 
 > 基于 [freqtrade](https://github.com/freqtrade/freqtrade)（2026.11-dev）的完整中文化部署方案：
 > **汉化服务端 + 自研中文 Web 控制台 + Nginx 同源分流 + Docker Compose 一键启动**。
-> 默认以 OKX **永续合约模拟盘**（dry_run，10,000 USDT，最多 6 仓）+ NostalgiaForInfinityX8 策略运行。
+> 默认以 OKX **永续合约模拟盘**（dry_run，10,000 USDT，最多 3 仓）+ NostalgiaForInfinityX8 策略运行。
 > 标的池为**静态池（山寨为主、主流并行）**：40 个 USDT 永续 = 14 个主流（BTC/ETH/SOL/XRP/DOGE/BNB/ADA/LINK/AVAX/LTC/BCH/DOT/UNI/ATOM）+ 26 个山寨；`StaticPairList` 固定不变，回测与实盘一致；每连接最多 240 个 WS 订阅频道，NFI 每标的需 5 个周期（5m/15m/1h/4h/1d），40 × 5 = 200 频道。想自动追踪成交量/新币可切换可选动态池（见「标的池」一节）。
 
 ![freqtrade](https://img.shields.io/badge/freqtrade-2026.11--dev-1f6feb?style=flat-square)
@@ -460,6 +460,22 @@ NFI X8 需要约 2000 根启动 K 线，递归分析要求 **5 倍**（≈10000 
 ### OKX 时间偏移告警
 
 日志出现「与 OKX 的时间偏移约 -xxx 毫秒」时，请同步宿主机 NTP。偏移过大会导致下单签名被拒。
+
+**典型症状**：宿主机时钟比 OKX 慢 1–2 秒时，WS 会在每个 K 线边界刷大量
+`Candle date > last refresh (...). This usually suggests a problem with time synchronization`
+警告（5m / 15m 边界每轮几十条），且 `--verbosity` 调高也查不到其他异常。
+
+**Windows 修复**（时钟漂移的常见根因是 Windows Time 服务被停用）：
+
+```powershell
+Set-Service w32time -StartupType Automatic
+Start-Service w32time
+w32tm /resync          # 立即重新同步
+w32tm /query /status   # 确认"上次成功同步时间"已更新
+```
+
+修复后偏移应小于 0.3 秒，边界警告随即消失。若仍频繁出现，检查 NTP 服务器可达性
+（`w32tm /query /source`）与系统时间区域设置。
 
 ### webserver 提示 `Strategy is mandatory in webserver mode`
 
