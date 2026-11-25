@@ -51,7 +51,7 @@ let candleSeries: ISeriesApi<"Candlestick"> | null = null;
 let markersApi: ISeriesMarkersPluginApi<Time> | null = null;
 const phLoading = ref(false);
 
-function chartOpts() {
+function chartOpts(opts: { height?: number; timeVisible?: boolean } = {}) {
     // 与全局主题保持一致（settingsStore 是唯一事实来源，App.vue 切换时同步更新）
     const dark = settingsStore.theme === "dark";
     return {
@@ -64,8 +64,13 @@ function chartOpts() {
             horzLines: { color: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }
         },
         crosshair: { mode: CrosshairMode.Normal },
-        timeScale: { timeVisible: true, secondsVisible: false },
-        height: 380,
+        timeScale: {
+            // 曲线跨 30 天时只显示日期，避免时分标签挤在一起
+            timeVisible: opts.timeVisible ?? true,
+            secondsVisible: false,
+            rightOffset: 8
+        },
+        height: opts.height ?? 380,
         autoSize: true
     };
 }
@@ -80,6 +85,32 @@ function initChart() {
         wickUpColor: "#22c55e",
         wickDownColor: "#ef4444"
     });
+}
+
+/** 钱包曲线专用配置:高度与容器 h-64(256px)一致,时间轴只显示日期 */
+const walletChartOpts = () => chartOpts({ height: 256, timeVisible: false });
+
+/**
+ * 降采样:按固定时间桶取最后一个值。
+ * 回测 30 天 5m 数据有 8000+ 点,原样塞进图表会只显示右端一小段(时间刻度密集、
+ * 看不到整体变化);按小时聚合到 ~720 点后 fitContent,可看到完整资产走势。
+ */
+function downsamplePoints(
+    rows: (string | number | null)[][],
+    iDate: number,
+    iValue: number,
+    bucketMs: number
+): { time: Time; value: number }[] {
+    const buckets = new Map<number, number>();
+    for (const r of rows) {
+        if (r[iDate] == null || r[iValue] == null) continue;
+        const t = parseDate(String(r[iDate]))?.getTime() ?? 0;
+        if (!t) continue;
+        buckets.set(Math.floor(t / bucketMs) * bucketMs, Number(r[iValue]));
+    }
+    return [...buckets.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([t, v]) => ({ time: (t / 1000) as Time, value: v }));
 }
 
 async function loadPairHistory() {
@@ -136,6 +167,8 @@ async function loadPairHistory() {
             else markersApi = createSeriesMarkers(candleSeries, markers);
         }
     }
+    // 显示回测区间全部 K 线,而不是只显示右端一小段
+    chart?.timeScale().fitContent();
 }
 
 function api_pairHistory(filename: string, strategy: string, pair: string, timeframe: string) {
@@ -170,18 +203,17 @@ async function loadWallet() {
     if (iDate < 0 || iTotal < 0 || !rows.length) return;
     await nextTick();
     if (!walletEl.value) return;
-    walletChart = walletChart ?? createChart(walletEl.value as HTMLElement, chartOpts());
+    // 钱包曲线容器高 256px(h-64),图表高度与之匹配;跨度 30 天只用日期刻度
+    walletChart = walletChart ?? createChart(walletEl.value as HTMLElement, walletChartOpts());
     walletSeries =
         walletSeries ?? walletChart.addSeries(LineSeries, { color: "#38bdf8", lineWidth: 2 });
     const series = walletSeries;
-    series.setData(
-        rows
-            .filter((r) => r[iDate] != null && r[iTotal] != null)
-            .map((r) => ({
-                time: ((parseDate(String(r[iDate]))?.getTime() ?? 0) / 1000) as Time,
-                value: Number(r[iTotal])
-            }))
-    );
+    // 5m 级 8000+ 点会只显示右端一小段,按小时聚合后 fitContent 展示完整走势;
+    // 短区间(≤3000 点)保持 5m 粒度
+    const bucketMs = rows.length > 3000 ? 3600_000 : 300_000;
+    const points = downsamplePoints(rows, iDate, iTotal, bucketMs);
+    series.setData(points);
+    walletChart.timeScale().fitContent();
 }
 
 /* ---------- market change ---------- */
@@ -265,7 +297,7 @@ watch(
     () => settingsStore.theme,
     () => {
         chart?.applyOptions(chartOpts());
-        walletChart?.applyOptions(chartOpts());
+        walletChart?.applyOptions(walletChartOpts());
     }
 );
 </script>
@@ -297,7 +329,7 @@ watch(
                 <CardDescription>回测期间账户总资产变化</CardDescription>
             </CardHeader>
             <CardContent>
-                <div ref="walletEl" class="h-52 w-full" />
+                <div ref="walletEl" class="h-64 w-full" />
                 <div
                     v-if="!walletData.length"
                     class="py-4 text-center text-sm text-muted-foreground"
