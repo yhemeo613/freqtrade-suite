@@ -55,7 +55,8 @@ services:
       dockerfile: Dockerfile.freqtrade
     container_name: ft-ws
     restart: unless-stopped
-    mem_limit: 1g
+    # webserver 需承载回测/高级分析任务(实测峰值约 0.55GB),给足余量
+    mem_limit: 2g
     cpus: 1.0
     logging: *logging-base
     volumes:
