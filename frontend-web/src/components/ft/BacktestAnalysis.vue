@@ -68,8 +68,7 @@ function chartOpts(opts: { height?: number; timeVisible?: boolean } = {}) {
             // 曲线跨 30 天时只显示日期，避免时分标签挤在一起
             timeVisible: opts.timeVisible ?? true,
             secondsVisible: false,
-            rightOffset: 8,
-            barSpacing: 6
+            rightOffset: 8
         },
         height: opts.height ?? 380,
         autoSize: true
@@ -90,6 +89,29 @@ function initChart() {
 
 /** 钱包曲线专用配置:高度与容器 h-64(256px)一致,时间轴只显示日期 */
 const walletChartOpts = () => chartOpts({ height: 256, timeVisible: false });
+
+/**
+ * 降采样:按固定时间桶取最后一个值。
+ * 回测 30 天 5m 数据有 8000+ 点,原样塞进图表会只显示右端一小段(时间刻度密集、
+ * 看不到整体变化);按小时聚合到 ~720 点后 fitContent,可看到完整资产走势。
+ */
+function downsamplePoints(
+    rows: (string | number | null)[][],
+    iDate: number,
+    iValue: number,
+    bucketMs: number
+): { time: Time; value: number }[] {
+    const buckets = new Map<number, number>();
+    for (const r of rows) {
+        if (r[iDate] == null || r[iValue] == null) continue;
+        const t = parseDate(String(r[iDate]))?.getTime() ?? 0;
+        if (!t) continue;
+        buckets.set(Math.floor(t / bucketMs) * bucketMs, Number(r[iValue]));
+    }
+    return [...buckets.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([t, v]) => ({ time: (t / 1000) as Time, value: v }));
+}
 
 async function loadPairHistory() {
     if (!pair.value || !props.filename) return;
@@ -145,6 +167,8 @@ async function loadPairHistory() {
             else markersApi = createSeriesMarkers(candleSeries, markers);
         }
     }
+    // 显示回测区间全部 K 线,而不是只显示右端一小段
+    chart?.timeScale().fitContent();
 }
 
 function api_pairHistory(filename: string, strategy: string, pair: string, timeframe: string) {
@@ -184,14 +208,12 @@ async function loadWallet() {
     walletSeries =
         walletSeries ?? walletChart.addSeries(LineSeries, { color: "#38bdf8", lineWidth: 2 });
     const series = walletSeries;
-    series.setData(
-        rows
-            .filter((r) => r[iDate] != null && r[iTotal] != null)
-            .map((r) => ({
-                time: ((parseDate(String(r[iDate]))?.getTime() ?? 0) / 1000) as Time,
-                value: Number(r[iTotal])
-            }))
-    );
+    // 5m 级 8000+ 点会只显示右端一小段,按小时聚合后 fitContent 展示完整走势;
+    // 短区间(≤3000 点)保持 5m 粒度
+    const bucketMs = rows.length > 3000 ? 3600_000 : 300_000;
+    const points = downsamplePoints(rows, iDate, iTotal, bucketMs);
+    series.setData(points);
+    walletChart.timeScale().fitContent();
 }
 
 /* ---------- market change ---------- */
