@@ -2,6 +2,20 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有显著变更都会记录在此文件中。
 
+## [v1.3.5] - 2026-11-25
+
+### 新增
+
+- **日志视图支持级别过滤与关键词搜索**：Web 控制台「运行日志」页新增两个过滤控件——级别（错误 / 警告 / 信息，错误含 critical、信息含 debug）与关键词（匹配消息与来源，大小写不敏感）；标题徽章显示「过滤后 / 总数」，排查问题时无需再逐行翻阅
+
+### 优化
+
+- **CI 加固**：配置模板 JSON 校验从 2 个扩展到全部 4 个模板（config.example / config.spot.example / config.btf / config_ws）；新增 `scripts/check_templates_no_secrets.py` 密钥泄露检查（exchange 密钥为空、JWT 为占位符、Telegram token 为空），公开仓库防误提交真实密钥，本地与 CI 共用
+
+### 文档
+
+- README 顶部摘要最大持仓 6 → 3，与 v1.3.4 默认一致
+
 ## [v1.3.4] - 2026-11-25
 
 ### 变更
