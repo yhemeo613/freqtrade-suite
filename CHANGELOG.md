@@ -2,6 +2,15 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有显著变更都会记录在此文件中。
 
+## [未发布]
+
+### 修复
+
+- **动态标的池成交额口径错误、排名失效**（v1.3.0 引入的回归）：`NewCoinWeightedVolumePairList` 的加权逻辑读取 `quoteVolume`，但 OKX 期货 tickers 该字段为 `None`，`None or 0 → 0 × 权重 = 0` 把所有标的成交额抹成 **0**；父类 `_ensure_quote_volume` 因「非 None」跳过兜底计算，最终排序全为 0，标的池实际按 tickers 顺序取前 40（并非成交额排名，XRP/DOGE 等主流高成交额标的会被漏掉）
+  - 成交额改用 `volCcy24h × last` 计算（币本位成交量；`vol24h` 是张数，需乘合约面值 ctVal，直接乘价格会把不同标的的排名放大/缩小最多 100 倍）
+  - 加权改为在 **tickers 副本**上计算：交易所行情字典会被缓存复用（TTL 1800s），原地修改会让同一批行情在多个刷新周期内被反复加权（权重复利），并污染缓存
+- **新币加权健壮性**：`new_coin_days` / `new_coin_boost` 非法配置回退默认（原会启动失败）；上市时间解析失败按「未知」中性加权（原按「刚上市」给最大加权）；`exclude_stocks_commodities` 对缺失 `instCategory` 的市场不再误杀
+
 ## [v1.3.2] - 2026-11-24
 
 ### 优化
