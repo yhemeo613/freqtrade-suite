@@ -19,6 +19,26 @@ const strategy = ref("");
 const pairsText = ref("");
 // 滚动默认值（60 天前至今），避免硬编码日期随时间过期（与下载/回测视图一致）
 const timerange = ref(defaultTimerange(60));
+// 递归分析的启动 K 线档位。freqtrade 默认档位为 [199,399,499,999,1999]，
+// 其中 1999×5=9995 根远超 OKX 各周期可提供的 1499 根，会导致所有策略都报
+// 「requires 1999 candles ... more than 5x」而无法分析。默认用 99/199
+// （199×5=995 ≤ 1499），用户可自行调整。
+const startupCandles = ref("99, 199");
+
+/** 解析档位输入；空输入返回 null（交给后端默认），非法返回 null 并提示 */
+function parseStartupCandles(): number[] | null {
+    const raw = startupCandles.value.trim();
+    if (!raw) return null;
+    const arr = raw
+        .split(/[\s,;]+/)
+        .map((s) => Number(s.trim()))
+        .filter((n) => Number.isFinite(n) && n > 0);
+    if (!arr.length) {
+        toast.error("启动 K 线档位格式无效，请填写如 99, 199");
+        return null;
+    }
+    return arr;
+}
 
 const btUrl = getClient().btBaseUrl;
 const hasBacktestService = computed(() => getClient().btBaseUrl !== getClient().baseUrl);
@@ -107,11 +127,13 @@ async function startRecursive() {
         toast.error("请填写策略、币对与时间范围");
         return;
     }
+    const startup_candle = parseStartupCandles();
     const res = await runApi(() =>
         getClient().btPost("/api/v1/recursive_analysis", {
             strategy: strategy.value,
             pairs: pairsText.value.split(/[\n,;\s]+/).filter(Boolean),
-            timerange: timerange.value
+            timerange: timerange.value,
+            ...(startup_candle ? { startup_candle } : {})
         })
     );
     if (res?.job_id) {
@@ -161,7 +183,7 @@ async function startLookahead() {
                 </CardDescription>
             </CardHeader>
             <CardContent class="space-y-3">
-                <div class="grid gap-3 sm:grid-cols-3">
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <div class="space-y-1.5">
                         <Label>策略</Label>
                         <Input v-model="strategy" />
@@ -170,6 +192,10 @@ async function startLookahead() {
                         <Label>时间范围</Label>
                         <Input v-model="timerange" />
                     </div>
+                    <div class="space-y-1.5">
+                        <Label>递归启动 K 线档位</Label>
+                        <Input v-model="startupCandles" placeholder="99, 199" />
+                    </div>
                     <div class="space-y-1.5 sm:col-span-1">
                         <Label>币对数量</Label>
                         <div class="text-sm text-muted-foreground pt-2">
@@ -177,6 +203,10 @@ async function startLookahead() {
                         </div>
                     </div>
                 </div>
+                <p class="text-xs text-muted-foreground">
+                    OKX 各周期最多提供 1499 根历史 K 线，档位需 ≤299（如 99、199）；留空则使用
+                    freqtrade 默认档位（含 1999，会超出交易所上限导致失败）。
+                </p>
                 <div class="space-y-1.5">
                     <Label>币对（每行一个）</Label>
                     <Textarea v-model="pairsText" rows="5" class="font-mono text-xs" />

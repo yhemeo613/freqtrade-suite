@@ -2,6 +2,16 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有显著变更都会记录在此文件中。
 
+## [未发布]
+
+### 新增
+
+- **部署 FreqAI（`Dockerfile.freqtrade` 基础镜像切换为 `stable_freqai`）**：镜像内置 `datasieve` / `lightgbm` / `xgboost` / `tensorboard` / `scikit-learn`，`/api/v1/freqaimodels` 从空列表恢复为 **10 个 FreqAI 模型**（LightGBM / XGBoost 系列）；保留 `ta` / `finta` / `scikit-optimize` 追加依赖。注意：当前 46 个内置策略均非 FreqAI 策略，训练/回测需自行添加 FreqAI 策略；`torch`（RL）属 `stable_freqairl` 变体，未包含
+
+### 修复
+
+- **递归分析（高级分析）可用**：freqtrade 默认启动 K 线档位 `[199,399,499,999,1999]` 中 1999 档需要 9995 根历史，超出 OKX 各周期 1499 根上限，导致所有策略的递归分析必然失败。Web 控制台「高级分析」页新增「递归启动 K 线档位」参数（默认 `99, 199`，199×5=995 ≤ 1499），留空才用后端默认；README 补充 API 调用示例
+
 ## [v1.3.6] - 2026-11-25
 
 ### 修复
