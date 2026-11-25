@@ -82,7 +82,8 @@ services:
     cpus: 0.5
     logging: *logging-base
     ports:
-      - "127.0.0.1:5173:80"
+      # 绑定所有网卡,允许局域网访问(仅本机访问可改回 127.0.0.1:5173:80)
+      - "5173:80"
     depends_on:
       freqtrade:
         condition: service_healthy
