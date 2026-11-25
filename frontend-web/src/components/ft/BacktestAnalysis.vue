@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
     Select,
     SelectContent,
@@ -35,7 +34,6 @@ import {
 } from "lightweight-charts";
 import { getClient } from "@/api/client";
 import { runApi } from "@/composables/useBotData";
-import type { MarketChange } from "@/api/types";
 
 const props = defineProps<{
     filename: string;
@@ -148,7 +146,8 @@ function api_pairHistory(filename: string, strategy: string, pair: string, timef
 }
 
 /* ---------- wallet 曲线 ---------- */
-const walletData = ref<Record<string, unknown>[]>([]);
+// freqtrade 返回结构:{columns:["date","__date_ts","total_quote"], data:[[...]], length}
+const walletData = ref<unknown[]>([]);
 const walletEl = ref<HTMLElement | null>(null);
 let walletChart: IChartApi | null = null;
 let walletSeries: ISeriesApi<"Line"> | null = null;
@@ -162,30 +161,39 @@ async function loadWallet() {
         true
     );
     if (!res) return;
-    walletData.value = (res.data ?? res ?? []) as Record<string, unknown>[];
+    const cols: string[] = Array.isArray(res.columns) ? res.columns : [];
+    const rows: (string | number | null)[][] = Array.isArray(res.data) ? res.data : [];
+    const iDate = cols.indexOf("date");
+    // 期货回测聚合列名为 total_quote；现货/旧版可能为 total
+    const iTotal = [cols.indexOf("total_quote"), cols.indexOf("total")].find((i) => i >= 0) ?? -1;
+    walletData.value = rows;
+    if (iDate < 0 || iTotal < 0 || !rows.length) return;
     await nextTick();
     if (!walletEl.value) return;
     walletChart = walletChart ?? createChart(walletEl.value as HTMLElement, chartOpts());
     walletSeries =
         walletSeries ?? walletChart.addSeries(LineSeries, { color: "#38bdf8", lineWidth: 2 });
     const series = walletSeries;
-    const rows = walletData.value;
-    const first = rows[0];
-    const dateKey = first?.date
-        ? "date"
-        : (Object.keys(first ?? {}).find((k) => /date|time/i.test(k)) ?? "");
     series.setData(
         rows
-            .filter((r) => r[dateKey] && r.total !== undefined)
+            .filter((r) => r[iDate] != null && r[iTotal] != null)
             .map((r) => ({
-                time: ((parseDate(r[dateKey] as string)?.getTime() ?? 0) / 1000) as Time,
-                value: r.total as number
+                time: ((parseDate(String(r[iDate]))?.getTime() ?? 0) / 1000) as Time,
+                value: Number(r[iTotal])
             }))
     );
 }
 
 /* ---------- market change ---------- */
-const marketChange = ref<MarketChange[]>([]);
+// freqtrade 返回结构:{columns:["date","mean","rel_mean","count","__date_ts"], data:[[...]], length}
+// 语义是「回测期间市场整体变化」,而非收益模拟
+interface MarketChangeRow {
+    date: string;
+    mean: number | null;
+    rel_mean: number | null;
+    count: number | null;
+}
+const marketChange = ref<MarketChangeRow[]>([]);
 const mcLoading = ref(false);
 
 async function loadMarketChange() {
@@ -198,7 +206,33 @@ async function loadMarketChange() {
         true
     );
     mcLoading.value = false;
-    if (res) marketChange.value = res as MarketChange[];
+    if (!res) return;
+    // 兼容直接返回数组的旧格式
+    if (Array.isArray(res)) {
+        marketChange.value = (res as MarketChangeRow[]).slice(0, 500);
+        return;
+    }
+    const cols: string[] = Array.isArray(res.columns) ? res.columns : [];
+    const rows: (string | number | null)[][] = Array.isArray(res.data) ? res.data : [];
+    const idx = (k: string) => cols.indexOf(k);
+    const iDate = idx("date");
+    const iMean = idx("mean");
+    const iRel = idx("rel_mean");
+    const iCount = idx("count");
+    if (iDate < 0 || iMean < 0) {
+        marketChange.value = [];
+        return;
+    }
+    // 只展示变化明显的时刻（|rel_mean| > 0.5%），避免 8000+ 行刷屏
+    marketChange.value = rows
+        .filter((r) => r[iDate] != null && r[iRel] != null && Math.abs(Number(r[iRel])) >= 0.005)
+        .slice(0, 300)
+        .map((r) => ({
+            date: String(r[iDate]),
+            mean: iMean >= 0 && r[iMean] != null ? Number(r[iMean]) : null,
+            rel_mean: r[iRel] != null ? Number(r[iRel]) : null,
+            count: iCount >= 0 && r[iCount] != null ? Number(r[iCount]) : null
+        }));
 }
 
 watch(
@@ -276,49 +310,43 @@ watch(
         <Card>
             <CardHeader class="pb-2">
                 <CardTitle class="text-base">市场变动评估</CardTitle>
-                <CardDescription>假设市场整体涨跌时，策略收益的变化</CardDescription>
+                <CardDescription
+                    >回测期间市场整体走势（均值为参与币对的价格均值，相对变化 &gt; 0.5%
+                    的时刻）</CardDescription
+                >
             </CardHeader>
             <CardContent>
-                <Table v-if="marketChange.length">
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>市场变动</TableHead>
-                            <TableHead class="text-right">总收益%</TableHead>
-                            <TableHead class="text-right">绝对收益</TableHead>
-                            <TableHead class="text-right">交易数</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        <TableRow v-for="(m, i) in marketChange" :key="i">
-                            <TableCell>
-                                <Badge
-                                    :variant="
-                                        (m.market_change ?? 0) >= 0 ? 'outline' : 'destructive'
-                                    "
+                <div v-if="marketChange.length" class="max-h-80 overflow-auto rounded-md border">
+                    <Table>
+                        <TableHeader class="sticky top-0 bg-card">
+                            <TableRow>
+                                <TableHead>时间</TableHead>
+                                <TableHead class="text-right">市场均值</TableHead>
+                                <TableHead class="text-right">相对变化</TableHead>
+                                <TableHead class="text-right">币对数</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            <TableRow v-for="(m, i) in marketChange" :key="i">
+                                <TableCell class="text-xs">{{ m.date }}</TableCell>
+                                <TableCell class="text-right tabular-nums">{{
+                                    m.mean !== null ? m.mean.toFixed(2) : "—"
+                                }}</TableCell>
+                                <TableCell
+                                    class="text-right tabular-nums font-medium"
+                                    :class="profitColor(m.rel_mean)"
                                 >
-                                    {{ fmtPct(m.market_change) }}
-                                </Badge>
-                            </TableCell>
-                            <TableCell
-                                class="text-right tabular-nums font-medium"
-                                :class="profitColor(m.profit_total)"
-                            >
-                                {{ fmtPct(m.profit_total) }}
-                            </TableCell>
-                            <TableCell
-                                class="text-right tabular-nums"
-                                :class="profitColor(m.profit_total_abs)"
-                            >
-                                {{ m.profit_total_abs }}
-                            </TableCell>
-                            <TableCell class="text-right tabular-nums">{{
-                                m.total_trades
-                            }}</TableCell>
-                        </TableRow>
-                    </TableBody>
-                </Table>
+                                    {{ fmtPct(m.rel_mean) }}
+                                </TableCell>
+                                <TableCell class="text-right tabular-nums">{{
+                                    m.count ?? "—"
+                                }}</TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                </div>
                 <div v-else-if="!mcLoading" class="py-4 text-center text-sm text-muted-foreground">
-                    暂无数据（此功能需要 webserver 模式与历史回测文件）
+                    暂无数据（此功能需要 webserver 模式与完整的历史回测文件）
                 </div>
             </CardContent>
         </Card>
