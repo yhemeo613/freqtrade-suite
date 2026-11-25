@@ -48,6 +48,7 @@ import { authStore, activeBot, disconnect } from "@/stores/auth";
 import { settingsStore, saveSettings } from "@/stores/settings";
 import { connectionStore } from "@/stores/connection";
 import { setSessionExpiredHandler } from "@/api/client";
+import MobileLayout from "@/mobile/MobileLayout.vue";
 
 const router = useRouter();
 const booted = ref(false);
@@ -102,7 +103,9 @@ function logout() {
     <template v-if="booted">
         <!-- 登录页独立布局 -->
         <router-view v-if="router.currentRoute.value.path === '/login'" />
-        <!-- 主布局 -->
+        <!-- 移动端布局（Vant 重构版，底部 Tabbar） -->
+        <MobileLayout v-else-if="router.currentRoute.value.meta.mobile" />
+        <!-- 主布局（桌面端） -->
         <SidebarProvider v-else>
             <Sidebar collapsible="icon">
                 <SidebarHeader>
