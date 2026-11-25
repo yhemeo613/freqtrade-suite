@@ -12,11 +12,13 @@ import { Microscope, ArrowLeftRight } from "lucide-vue-next";
 import { getClient } from "@/api/client";
 import { runApi, api } from "@/composables/useBotData";
 import { classifyJob, jobErrorText, outcomeLabel } from "@/lib/jobStatus";
+import { defaultTimerange } from "@/lib/parse";
 import type { AnalysisJobResult } from "@/api/types";
 
 const strategy = ref("");
 const pairsText = ref("");
-const timerange = ref("20261001-");
+// 滚动默认值（60 天前至今），避免硬编码日期随时间过期（与下载/回测视图一致）
+const timerange = ref(defaultTimerange(60));
 
 const btUrl = getClient().btBaseUrl;
 const hasBacktestService = computed(() => getClient().btBaseUrl !== getClient().baseUrl);
