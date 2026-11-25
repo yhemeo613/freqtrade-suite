@@ -52,4 +52,8 @@ jobs:
       - name: 配置模板 JSON 校验
         run: |
           python -m json.tool frontend-server/user_data/config.example.json > /dev/null
+          python -m json.tool frontend-server/user_data/config.spot.example.json > /dev/null
+          python -m json.tool frontend-server/user_data/config.btf.json > /dev/null
           python -m json.tool frontend-server/user_data/config_ws.json > /dev/null
+      - name: 配置模板密钥泄露检查
+        run: python scripts/check_templates_no_secrets.py
