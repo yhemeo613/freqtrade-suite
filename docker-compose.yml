@@ -12,6 +12,13 @@ x-healthcheck-base: &healthcheck-base
   retries: 5
   start_period: 20s
 
+# 日志轮转：限制 Docker stdout 日志体积,防止长期运行后磁盘无限膨胀
+x-logging-base: &logging-base
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "3"
+
 services:
   freqtrade:
     # 自定义镜像：基于固定 digest 的官方 stable 镜像补齐第三方策略依赖（ta/finta/scikit-optimize）
@@ -22,6 +29,10 @@ services:
       dockerfile: Dockerfile.freqtrade
     container_name: ft-trade
     restart: unless-stopped
+    # 资源上限(实测峰值约 0.6GB CPU 2%)：异常场景下保护宿主机不被拖垮
+    mem_limit: 2g
+    cpus: 2.0
+    logging: *logging-base
     volumes:
       # 源码只读挂载；可写面仅限 user_data（日志 / 数据库 / 回测结果）
       - ./frontend-server:/freqtrade:ro
@@ -44,6 +55,9 @@ services:
       dockerfile: Dockerfile.freqtrade
     container_name: ft-ws
     restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.0
+    logging: *logging-base
     volumes:
       - ./frontend-server:/freqtrade:ro
       - ./frontend-server/user_data:/freqtrade/user_data
@@ -63,6 +77,9 @@ services:
     image: freqtrade-web:local
     container_name: ft-web
     restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
+    logging: *logging-base
     ports:
       - "127.0.0.1:5173:80"
     depends_on:
