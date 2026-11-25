@@ -2,7 +2,7 @@
 
 > 基于 [freqtrade](https://github.com/freqtrade/freqtrade)（2026.11-dev）的完整中文化部署方案：
 > **汉化服务端 + 自研中文 Web 控制台 + Nginx 同源分流 + Docker Compose 一键启动**。
-> 默认以 OKX **永续合约模拟盘**（dry_run，10,000 USDT，最多 6 仓）+ NostalgiaForInfinityX8 策略运行。
+> 默认以 OKX **永续合约模拟盘**（dry_run，10,000 USDT，最多 3 仓）+ NostalgiaForInfinityX8 策略运行。
 > 标的池为**静态池（山寨为主、主流并行）**：40 个 USDT 永续 = 14 个主流（BTC/ETH/SOL/XRP/DOGE/BNB/ADA/LINK/AVAX/LTC/BCH/DOT/UNI/ATOM）+ 26 个山寨；`StaticPairList` 固定不变，回测与实盘一致；每连接最多 240 个 WS 订阅频道，NFI 每标的需 5 个周期（5m/15m/1h/4h/1d），40 × 5 = 200 频道。想自动追踪成交量/新币可切换可选动态池（见「标的池」一节）。
 
 ![freqtrade](https://img.shields.io/badge/freqtrade-2026.11--dev-1f6feb?style=flat-square)
