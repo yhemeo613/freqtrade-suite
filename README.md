@@ -445,17 +445,41 @@ docker compose ps                      # 健康状态
 - 检查 Nginx 是否把该路径分到了正确上游：`docker compose logs ft-web | grep <路径>`
 - 例如 `plot_config` 属于交易进程，不应分流到 8081
 
-### `freqaimodels` 返回空列表（`FreqAI 依赖未安装`）
+### `freqaimodels` 返回空列表
 
-官方 `stable` 镜像不含 FreqAI 可选依赖（`datasieve` / `torch` 等）。本套件已对该接口做**优雅降级**：
-依赖缺失时返回 `{"freqaimodels": []}` 并在日志告警，不再产生 500 与 ASGI 异常堆栈。
-需要使用 FreqAI 时：把 `docker-compose.yml` 中两个 freqtrade 服务的镜像换成
-`freqtradeorg/freqtrade:stable_freqai`（RL 需求用 `stable_freqairl`）并重建。
+本套件默认镜像已基于 `stable_freqai`，依赖齐全，通常不会出现空列表。
+若自己换成官方 `stable` 镜像后发现该接口返回 `{"freqaimodels": []}`：说明镜像缺 FreqAI 可选依赖
+（`datasieve` 等），本套件对缺失场景做了**优雅降级**（空列表 + 日志告警，不再 500）。
+恢复 FreqAI 功能请改用本套件的 `Dockerfile.freqtrade`（基于 `stable_freqai`）重建，
+或把镜像换成 `freqtradeorg/freqtrade:stable_freqai`（RL 需求用 `stable_freqairl`）。
 
-### 递归分析（Recursive Analysis）对 NFI 不可用
+### 递归分析（Recursive Analysis）与启动 K 线档位
 
-NFI X8 需要约 2000 根启动 K 线，递归分析要求 **5 倍**（≈10000 根），超出交易所数据上限，
-接口会返回配置错误（属预期，不影响交易）。需要递归分析请换用启动 K 线较少的策略。
+递归分析要求「启动 K 线 × 5」根历史数据，而 **OKX 各周期最多只提供 1499 根**。
+freqtrade 默认档位为 `[199, 399, 499, 999, 1999]`，其中 1999 档需要 9995 根，
+**任何策略都会因超出交易所上限而失败**（NFI 需要约 2000 根，同样不可用；属交易所限制，不影响交易）。
+
+Web 控制台「高级分析」页已内置**「递归启动 K 线档位」**参数（默认 `99, 199`，
+199×5=995 ≤ 1499），留空才会使用 freqtrade 默认档位。也可直接调用 API：
+
+```bash
+curl -X POST http://127.0.0.1:8081/api/v1/recursive_analysis \
+  -H "Content-Type: application/json" \
+  -d '{"strategy":"FOttStrategy","pairs":["BTC/USDT:USDT"],"timerange":"20261101-20261120","startup_candle":[99,199]}'
+```
+
+同一策略的 `startup_candle_count` 会自动追加进档位列表；策略该值为 0 时请先补定义。
+
+### FreqAI 依赖与 `freqaimodels`
+
+本套件后端镜像基于官方 **stable_freqai** 变体（`Dockerfile.freqtrade`），已内置 FreqAI 稳定版依赖
+（`datasieve` / `lightgbm` / `xgboost` / `tensorboard` / `scikit-learn`），
+`/api/v1/freqaimodels` 可正常返回 LightGBM / XGBoost 等模型列表（不再降级为空）。
+注意：`freqaimodels` 仅在 **webserver 进程（8081）** 暴露，交易进程（8080）无此端点属正常。
+
+FreqAI 策略需自带 `feature_engineering_expand_*` / `set_freqai_targets` 等方法；
+当前内置的 46 个社区策略均非 FreqAI 策略，部署后需自行添加 FreqAI 策略才能训练/回测。
+深度学习依赖（`torch`）属于 `stable_freqairl` 变体，本镜像不包含。
 
 ### OKX 时间偏移告警
 
