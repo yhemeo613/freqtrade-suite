@@ -2,6 +2,14 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有显著变更都会记录在此文件中。
 
+## [未发布]
+
+### 变更
+
+- **默认标的池改为静态池（山寨为主、主流并行）**：`pairlists` 从 `NewCoinWeightedVolumePairList` 改为 `StaticPairList`，固定 40 个 USDT 永续 = 14 个主流（BTC/ETH/SOL/XRP/DOGE/BNB/ADA/LINK/AVAX/LTC/BCH/DOT/UNI/ATOM）+ 26 个山寨（SUI/APT/ARB/OP/INJ/SEI/TIA/JUP/WLD/ENA/ONDO/PEPE/SHIB/WIF/FIL/AAVE/CRV/LDO/HBAR/ICP/ALGO/NEAR/TAO/HYPE/ZEC/TRUMP），山寨占比约 65%
+  - 原因：动态池每 15 分钟换池，NFI 需 480–800 根 5m K 线（约 2–3 天）历史才能计算指标，新入池标的往往历史不足无法入场；静态池历史稳定且**回测与实盘一致**（动态池无法参加 freqtrade 回测）
+  - `config.example.json` / `config.spot.example.json` / README 同步；动态池保留为可选能力（见 `docs/PATCHES.md`）
+
 ## [v1.3.3] - 2026-11-25
 
 ### 修复

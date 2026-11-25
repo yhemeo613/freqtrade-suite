@@ -35,7 +35,7 @@
 | `freqtrade/plugins/pairlist/VolumePairList.py` | `quoteVolume` 兜底计算 | OKX 期货 tickers 不提供 `quoteVolume`，优先用原始字段 `volCcy24h`（币本位成交量）× `last` 兜底（`baseVolume` 是张数，需乘合约面值，直接乘价格最多失真 100 倍）；并放宽 ticker 模式过滤条件（有 `baseVolume` 即可入选） |
 | `freqtrade/rpc/api_server/api_webserver.py` | `freqaimodels` 优雅降级 | 官方 stable 镜像缺 FreqAI 可选依赖（`datasieve`/`torch`），依赖缺失时返回空列表 + 告警，替代原先的 500 与 ASGI 异常堆栈 |
 | `freqtrade/exchange/exchange.py` | 「回退到 REST」降为 DEBUG | WS 数据未就绪时回退 REST 属正常兜底,原 INFO 日志在每次换池后产生大量噪声;降为 DEBUG,不影响数据完整性,需要排查时用 DEBUG 日志 |
-| `freqtrade/plugins/pairlist/NewCoinWeightedVolumePairList.py` | **新币加权动态标的池(新增插件)** | 继承 VolumePairList ticker 模式:1 次全市场请求,新币(上市 ≤90 天)成交额加权(最高 ×9),可排除主流大币与股票/商品代币;每 10 分钟刷新,WS 只订阅入选 40 个,零限流且不漏新币。成交额口径为 `volCcy24h × last`(币本位成交量,而非 `vol24h` 张数),加权在 tickers **副本**上计算(不修改交易所行情缓存,避免权重复利) |
+| `freqtrade/plugins/pairlist/NewCoinWeightedVolumePairList.py` | **新币加权动态标的池(可选插件,默认配置不启用)** | 继承 VolumePairList ticker 模式:1 次全市场请求,新币(上市 ≤90 天)成交额加权(最高 ×9),可排除主流大币与股票/商品代币;每 10 分钟刷新,WS 只订阅入选 40 个,零限流且不漏新币。成交额口径为 `volCcy24h × last`(币本位成交量,而非 `vol24h` 张数),加权在 tickers **副本**上计算(不修改交易所行情缓存,避免权重复利)。默认配置已改为 `StaticPairList`(静态 40 池,山寨为主+主流并行,回测与实盘一致);需要自动选池时再切换到本插件启用动态池 |
 | `freqtrade/constants.py` | 注册自定义 pairlist | `AVAILABLE_PAIRLISTS` 追加 `NewCoinWeightedVolumePairList`,通过 config 校验枚举 |
 | `freqtrade/configuration/config_validation.py` | 占位符凭据 fail-fast | 拒绝 `jwt_secret_key` / `password` 含「请替换」的模板占位符配置，防止以"已知密钥 + 已知口令"运行 API |
 
