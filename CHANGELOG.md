@@ -2,7 +2,7 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有显著变更都会记录在此文件中。
 
-## [未发布]
+## [v1.3.3] - 2026-11-25
 
 ### 修复
 
@@ -286,6 +286,14 @@
 - 107 个组件从 `cn` 包迁移到本地 `@/lib/utils`，卸载 `cn` 依赖(#9)
 - Nginx gzip 压缩 + 静态资源 30 天缓存；Telegram 周期统计文案拼接修复
 
+[v1.3.3]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.3.3
+[v1.3.2]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.3.2
+[v1.3.1]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.3.1
+[v1.3.0]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.3.0
+[v1.2.1]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.2.1
+[v1.2.0]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.2.0
+[v1.1.1]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.1.1
+[v1.1.0]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.1.0
 [v1.0.6]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.6
 [v1.0.5]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.5
 [v1.0.4]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.0.4
