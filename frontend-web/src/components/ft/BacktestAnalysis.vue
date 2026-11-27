@@ -16,7 +16,7 @@ import {
     TableHeader,
     TableRow
 } from "@/components/ui/table";
-import { fmtPct, profitColor, parseDate } from "@/lib/format";
+import { fmtPct, profitColor, parseDate, findTotalColumn } from "@/lib/format";
 import { settingsStore } from "@/stores/settings";
 import {
     createChart,
@@ -198,7 +198,7 @@ async function loadWallet() {
     const rows: (string | number | null)[][] = Array.isArray(res.data) ? res.data : [];
     const iDate = cols.indexOf("date");
     // 期货回测聚合列名为 total_quote；现货/旧版可能为 total
-    const iTotal = [cols.indexOf("total_quote"), cols.indexOf("total")].find((i) => i >= 0) ?? -1;
+    const iTotal = findTotalColumn(cols);
     walletData.value = rows;
     if (iDate < 0 || iTotal < 0 || !rows.length) return;
     await nextTick();

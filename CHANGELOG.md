@@ -4,6 +4,10 @@
 
 ## [未发布]
 
+### 修复
+
+- **仪表盘「资产曲线」在期货模式下永远空白**：`/historic_balance` 聚合列名是 `total_quote`（期货），前端用 `indexOf("total")` 精确匹配（`lastIndexOf` 同样命中不了 `total_quote`）导致返回 -1、整条曲线被跳过。桌面端与移动端仪表盘、回测深度分析钱包曲线统一改用新的 `findTotalColumn()`（优先 `total_quote`，回退 `total`），新增 4 个单测
+
 ### 新增
 
 - **移动端 UI 重构（Vant 4）**：手机访问自动进入独立移动端界面（`/m/*` 路由 + 底部 Tabbar + 顶部 NavBar），共 5 个页面：

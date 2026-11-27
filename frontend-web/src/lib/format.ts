@@ -126,3 +126,17 @@ export function botStateZh(state: string | undefined | null): string {
     if (!state) return "—";
     return BOT_STATE_ZH[state] ?? state;
 }
+
+/**
+ * 在 freqtrade 的「时间序列列式响应」里定位「总资产」列。
+ *
+ * 同一类接口在不同市场模式下列名不同：
+ * - 期货：`total_quote`（`/historic_balance`、回测 `wallet` 接口的聚合列）
+ * - 现货 / 旧版本：`total`
+ * 用 `indexOf("total")` 精确匹配会漏掉 `total_quote`，导致曲线整条空白。
+ *
+ * @returns 命中的列下标；找不到返回 -1（调用方应跳过渲染）
+ */
+export function findTotalColumn(cols: string[]): number {
+    return [cols.indexOf("total_quote"), cols.indexOf("total")].find((i) => i >= 0) ?? -1;
+}
