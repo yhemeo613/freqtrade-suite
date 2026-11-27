@@ -2,6 +2,12 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有显著变更都会记录在此文件中。
 
+## [未发布]
+
+### 变更
+
+- **启动只加载 SWAP 市场（`fetchMarkets: ["swap"]`）**：此前启动要拉取 OKX 全部市场类型（SPOT 1250 条 / SWAP / FUTURES / OPTION 四次重请求），任一接口失败整个进程无法启动。实际只交易 USDT 永续，SPOT 与 OPTION 市场纯属累赘——砍掉后启动数据量减约 70%，且避开当前最不稳定的 OPTION 接口，启动成功率大幅提升。`config.example.json`（`["swap"]`）/ `config.spot.example.json`（`["spot"]`）/ README 同步
+
 ## [v1.3.7] - 2026-11-27
 
 ### 修复
