@@ -1,8 +1,13 @@
 # 后端自定义镜像:在固定 digest 的官方 freqtrade 镜像上补齐第三方策略依赖
 # 基础镜像与 docker-compose 中锁定的一致（升级 freqtrade 时同步替换 digest）
-FROM freqtradeorg/freqtrade@sha256:bd52747f04d0472ea326480e4800dbaf9dda0313b04e511fe518d04e108c817b
+#
+# 基础镜像使用官方 stable_freqai 变体：在 stable 基础上预装 FreqAI 稳定版依赖
+# （datasieve / lightgbm / xgboost / tensorboard / scikit-learn），使
+# `/api/v1/freqaimodels` 不再降级为空列表，可用于 FreqAI 策略训练/回测。
+# 注意：FreqAI 的深度学习依赖（torch）属于 stable_freqairl 变体，本镜像不包含。
+FROM freqtradeorg/freqtrade@sha256:49011fb782c7ebea914210103eb146b1715c0fb69076ae9244e5a682cfb75f00
 
-# 第三方技术指标/优化库：部分社区策略依赖
+# 第三方技术指标/优化库：部分社区策略依赖（stable_freqai 镜像不含，需追加）
 #   - ta        : GodStra / Heracles
 #   - finta     : CryptoFrog
 #   - scikit-optimize (skopt): CryptoFrog

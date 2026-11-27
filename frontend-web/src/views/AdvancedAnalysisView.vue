@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Microscope, ArrowLeftRight } from "lucide-vue-next";
-import { getClient } from "@/api/client";
+import { getClient, ApiError } from "@/api/client";
 import { runApi, api } from "@/composables/useBotData";
 import { classifyJob, jobErrorText, outcomeLabel } from "@/lib/jobStatus";
 import { defaultTimerange } from "@/lib/parse";
@@ -19,6 +19,32 @@ const strategy = ref("");
 const pairsText = ref("");
 // 滚动默认值（60 天前至今），避免硬编码日期随时间过期（与下载/回测视图一致）
 const timerange = ref(defaultTimerange(60));
+// 递归分析的启动 K 线档位。freqtrade 默认档位为 [199,399,499,999,1999]，
+// 其中 1999×5=9995 根远超 OKX 各周期可提供的 1499 根，会导致所有策略都报
+// 「requires 1999 candles ... more than 5x」而无法分析。默认用 99/199
+// （199×5=995 ≤ 1499），用户可自行调整。
+const startupCandles = ref("99, 199");
+
+// 前视偏差分析的回测信号数阈值。freqtrade 默认 minimum_trade_amount=10：
+// 区间内信号少于该值时会直接取消分析（看起来像"失败"），NFI 等选择性策略
+// 信号极少，可调小到 1~3 才能完成分析。
+const minTrades = ref("10");
+const targetTrades = ref("20");
+
+/** 解析档位输入；空输入返回 null（交给后端默认），非法返回 null 并提示 */
+function parseStartupCandles(): number[] | null {
+    const raw = startupCandles.value.trim();
+    if (!raw) return null;
+    const arr = raw
+        .split(/[\s,;]+/)
+        .map((s) => Number(s.trim()))
+        .filter((n) => Number.isFinite(n) && n > 0);
+    if (!arr.length) {
+        toast.error("启动 K 线档位格式无效，请填写如 99, 199");
+        return null;
+    }
+    return arr;
+}
 
 const btUrl = getClient().btBaseUrl;
 const hasBacktestService = computed(() => getClient().btBaseUrl !== getClient().baseUrl);
@@ -67,13 +93,33 @@ function startPolling(jobId: string, kind: "recursive" | "lookahead") {
         else laRunning.value = v;
     };
     const timer = setInterval(async () => {
-        const res = await runApi(() => getter(), true);
-        if (!res) {
+        let res: AnalysisJobResult | undefined;
+        try {
+            res = await getter();
+        } catch (e) {
+            // 任务丢失(404):多半是 webserver 重启导致后台任务消失,立即停止并明确提示
+            if (e instanceof ApiError && e.status === 404) {
+                clearInterval(timer);
+                pollFailures[kind] = 0;
+                setRunning(false);
+                toast.error("分析任务已丢失（服务可能重启），请重新提交分析");
+                return;
+            }
             pollFailures[kind]++;
             if (pollFailures[kind] >= 5) {
                 clearInterval(timer);
                 pollFailures[kind] = 0;
                 // 停止轮询时必须解除"分析中"锁定，否则按钮会永久禁用
+                setRunning(false);
+                toast.error("轮询失败次数过多，已停止");
+            }
+            return;
+        }
+        if (!res) {
+            pollFailures[kind]++;
+            if (pollFailures[kind] >= 5) {
+                clearInterval(timer);
+                pollFailures[kind] = 0;
                 setRunning(false);
                 toast.error("轮询失败次数过多，已停止");
             }
@@ -107,11 +153,13 @@ async function startRecursive() {
         toast.error("请填写策略、币对与时间范围");
         return;
     }
+    const startup_candle = parseStartupCandles();
     const res = await runApi(() =>
         getClient().btPost("/api/v1/recursive_analysis", {
             strategy: strategy.value,
             pairs: pairsText.value.split(/[\n,;\s]+/).filter(Boolean),
-            timerange: timerange.value
+            timerange: timerange.value,
+            ...(startup_candle ? { startup_candle } : {})
         })
     );
     if (res?.job_id) {
@@ -126,11 +174,15 @@ async function startLookahead() {
         toast.error("请填写策略、币对与时间范围");
         return;
     }
+    const minN = Math.max(1, Number(minTrades.value) || 10);
+    const targetN = Math.max(minN, Number(targetTrades.value) || 20);
     const res = await runApi(() =>
         getClient().btPost("/api/v1/lookahead_analysis", {
             strategy: strategy.value,
             pairs: pairsText.value.split(/[\n,;\s]+/).filter(Boolean),
-            timerange: timerange.value
+            timerange: timerange.value,
+            minimum_trade_amount: minN,
+            targeted_trade_amount: targetN
         })
     );
     if (res?.job_id) {
@@ -161,7 +213,7 @@ async function startLookahead() {
                 </CardDescription>
             </CardHeader>
             <CardContent class="space-y-3">
-                <div class="grid gap-3 sm:grid-cols-3">
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <div class="space-y-1.5">
                         <Label>策略</Label>
                         <Input v-model="strategy" />
@@ -170,6 +222,10 @@ async function startLookahead() {
                         <Label>时间范围</Label>
                         <Input v-model="timerange" />
                     </div>
+                    <div class="space-y-1.5">
+                        <Label>递归启动 K 线档位</Label>
+                        <Input v-model="startupCandles" placeholder="99, 199" />
+                    </div>
                     <div class="space-y-1.5 sm:col-span-1">
                         <Label>币对数量</Label>
                         <div class="text-sm text-muted-foreground pt-2">
@@ -177,6 +233,10 @@ async function startLookahead() {
                         </div>
                     </div>
                 </div>
+                <p class="text-xs text-muted-foreground">
+                    OKX 各周期最多提供 1499 根历史 K 线，档位需 ≤299（如 99、199）；留空则使用
+                    freqtrade 默认档位（含 1999，会超出交易所上限导致失败）。
+                </p>
                 <div class="space-y-1.5">
                     <Label>币对（每行一个）</Label>
                     <Textarea v-model="pairsText" rows="5" class="font-mono text-xs" />
@@ -235,6 +295,19 @@ async function startLookahead() {
                         >
                     </CardHeader>
                     <CardContent class="space-y-3">
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div class="space-y-1.5">
+                                <Label>最少交易数（minimum_trade_amount）</Label>
+                                <Input v-model="minTrades" placeholder="10" />
+                                <p class="text-xs text-muted-foreground">
+                                    区间内信号少于该值会取消分析；NFI 等选择性策略可调小到 1~3
+                                </p>
+                            </div>
+                            <div class="space-y-1.5">
+                                <Label>目标交易数（targeted_trade_amount）</Label>
+                                <Input v-model="targetTrades" placeholder="20" />
+                            </div>
+                        </div>
                         <Button :disabled="laRunning" @click="startLookahead">
                             {{ laRunning ? "分析中…" : "开始分析" }}
                         </Button>

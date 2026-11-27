@@ -27,7 +27,7 @@ import {
 import { Play, Square, History as HistoryIcon } from "lucide-vue-next";
 import BacktestAnalysis from "@/components/ft/BacktestAnalysis.vue";
 import { getClient } from "@/api/client";
-import { runApi, type Trade } from "@/composables/useBotData";
+import { runApi, api, type Trade } from "@/composables/useBotData";
 import type { BacktestResult, BacktestHistoryItem } from "@/api/types";
 import { fmtPct, fmtCoin, profitColor, exitReasonZh, directionZh, fmtDate } from "@/lib/format";
 import { classifyJob, jobErrorText } from "@/lib/jobStatus";
@@ -39,6 +39,21 @@ const strategy = ref("");
 const timerange = ref(defaultTimerange(30));
 const timeframe = ref("5m");
 const enableProtections = ref(false);
+
+/* ---------- 深度分析用币对 ----------
+ * 优先用回测成交的币对；若回测 0 交易（NFI 等选择性策略常见），
+ * 回退到当前白名单，保证 K 线深度分析仍有币对可选。
+ */
+const whitelistPairs = ref<string[]>([]);
+async function loadWhitelist() {
+    const wl = await runApi(() => api.whitelist(), true);
+    if (wl) whitelistPairs.value = wl.whitelist ?? [];
+}
+void loadWhitelist();
+const analysisPairs = computed<string[]>(() => {
+    const traded = [...new Set(resultTrades.value.map((t: Trade) => t.pair))];
+    return traded.length ? traded : whitelistPairs.value;
+});
 
 /* ---------- 运行状态 ---------- */
 const running = ref(false);
@@ -356,7 +371,7 @@ onUnmounted(stopPoll);
                     :filename="resultFilename"
                     :strategy="resultStrategy"
                     :timeframe="timeframe"
-                    :pairs="[...new Set(resultTrades.map((t: any) => t.pair))]"
+                    :pairs="analysisPairs"
                 />
                 <div
                     v-else

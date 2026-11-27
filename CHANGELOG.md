@@ -2,6 +2,43 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有显著变更都会记录在此文件中。
 
+## [v1.3.7] - 2026-11-27
+
+### 修复
+
+- **仪表盘「资产曲线」在期货模式下永远空白**：`/historic_balance` 聚合列名是 `total_quote`（期货），前端用 `indexOf("total")` 精确匹配（`lastIndexOf` 同样命中不了 `total_quote`）导致返回 -1、整条曲线被跳过。桌面端与移动端仪表盘、回测深度分析钱包曲线统一改用新的 `findTotalColumn()`（优先 `total_quote`，回退 `total`），新增 4 个单测
+
+### 新增
+
+- **移动端 UI 重构（Vant 4）**：手机访问自动进入独立移动端界面（`/m/*` 路由 + 底部 Tabbar + 顶部 NavBar），共 5 个页面：
+  - **持仓**：下拉刷新、持仓卡片（方向/杠杆/盈亏/持仓时长）、平仓确认
+  - **仪表盘**：2×2 摘要卡片、资产曲线（fitContent）、近 7 天每日收益
+  - **图表**：K 线 + 成交量、币对选择器（Popup + Picker）、周期切换（5m–1d）
+  - **日志**：级别筛选 + 关键词搜索 + 列表（级别着色）
+  - **设置**：机器人信息、主题开关、切换/断开连接
+  - 桌面端界面完全不变；设备自适应由路由守卫实现（手机访问桌面路由 → 自动 `/m/*`，桌面访问 `/m/*` → 回到桌面）
+
+### 修复
+
+- **SPA 入口不缓存**（`nginx.conf`）：`index.html` 原无可控缓存，发版后浏览器可能长时间引用旧 JS（需手动强刷）；现对入口响应加 `Cache-Control: no-cache, must-revalidate`，静态资源仍保持 30 天强缓存
+
+### 修复
+
+- **回测「深度分析」无内容**（三个真实缺陷）：
+  - **钱包曲线空白**：`/backtest/history/{file}/{strategy}/wallet` 返回 `{columns:["date","__date_ts","total_quote"], data:[[...]]}`，前端按对象字段 `r.date`/`r.total` 解析导致全被过滤；改为按列名解析并兼容 `total_quote`（期货）与 `total`（现货/旧版）
+  - **市场变动表错乱/空白**：`/market_change` 返回 `{columns:["date","mean","rel_mean","count","__date_ts"], data:[[...]]}`，前端当作数组渲染；改为按列解析，表格改为「时间 / 市场均值 / 相对变化 / 币对数」（仅展示 \|相对变化\| > 0.5% 的时刻）
+  - **K 线图无币对可选**：深度分析币对原仅来自回测成交记录，回测 0 交易（NFI 等选择性策略常见）时无币对可渲染；改为回退到当前白名单
+
+### 新增
+
+- **部署 FreqAI（`Dockerfile.freqtrade` 基础镜像切换为 `stable_freqai`）**：镜像内置 `datasieve` / `lightgbm` / `xgboost` / `tensorboard` / `scikit-learn`，`/api/v1/freqaimodels` 从空列表恢复为 **10 个 FreqAI 模型**（LightGBM / XGBoost 系列）；保留 `ta` / `finta` / `scikit-optimize` 追加依赖。注意：当前 46 个内置策略均非 FreqAI 策略，训练/回测需自行添加 FreqAI 策略；`torch`（RL）属 `stable_freqairl` 变体，未包含
+
+### 修复
+
+- **递归分析（高级分析）可用**：freqtrade 默认启动 K 线档位 `[199,399,499,999,1999]` 中 1999 档需要 9995 根历史，超出 OKX 各周期 1499 根上限，导致所有策略的递归分析必然失败。Web 控制台「高级分析」页新增「递归启动 K 线档位」参数（默认 `99, 199`，199×5=995 ≤ 1499），留空才用后端默认；README 补充 API 调用示例
+- **前视偏差（Lookahead）分析可用性**：「高级分析」页新增「最少交易数 / 目标交易数」参数（默认 10 / 20）。freqtrade 在区间内信号少于 `minimum_trade_amount` 时会**取消**分析（看起来像"失败"），NFI 等选择性策略可调小到 1~3；同时轮询遇到任务丢失（404，如 webserver 重启）时立即停止并明确提示「分析任务已丢失，请重新提交」，不再笼统报"轮询失败"
+- **ft-ws 内存上限 1GB → 2GB**：回测/高级分析任务实测峰值约 0.55GB，1GB 余量偏紧，避免分析期间被资源上限打断
+
 ## [v1.3.6] - 2026-11-25
 
 ### 修复
@@ -333,6 +370,10 @@
 - 107 个组件从 `cn` 包迁移到本地 `@/lib/utils`，卸载 `cn` 依赖(#9)
 - Nginx gzip 压缩 + 静态资源 30 天缓存；Telegram 周期统计文案拼接修复
 
+[v1.3.7]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.3.7
+[v1.3.6]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.3.6
+[v1.3.5]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.3.5
+[v1.3.4]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.3.4
 [v1.3.3]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.3.3
 [v1.3.2]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.3.2
 [v1.3.1]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.3.1
