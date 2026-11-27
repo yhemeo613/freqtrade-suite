@@ -4,6 +4,7 @@ import {
     directionZh,
     entryTagZh,
     exitReasonZh,
+    findTotalColumn,
     fmtCoin,
     fmtDate,
     fmtDuration,
@@ -160,5 +161,21 @@ describe("botStateZh", () => {
         expect(botStateZh(undefined)).toBe("—");
         expect(botStateZh(null)).toBe("—");
         expect(botStateZh("")).toBe("—");
+    });
+});
+
+describe("findTotalColumn", () => {
+    it("期货引用的 total_quote 列", () => {
+        expect(findTotalColumn(["date", "__date_ts", "total_quote"])).toBe(2);
+    });
+    it("现货/旧版的 total 列", () => {
+        expect(findTotalColumn(["date", "total"])).toBe(1);
+    });
+    it("两种列同时存在时优先 total_quote", () => {
+        expect(findTotalColumn(["date", "total", "total_quote"])).toBe(2);
+    });
+    it("找不到返回 -1（调用方跳过渲染）", () => {
+        expect(findTotalColumn(["date", "balance"])).toBe(-1);
+        expect(findTotalColumn([])).toBe(-1);
     });
 });

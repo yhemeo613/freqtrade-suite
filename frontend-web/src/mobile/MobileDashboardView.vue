@@ -12,7 +12,7 @@ import {
 import { api, runApi, usePolling } from "@/composables/useBotData";
 import { getClient } from "@/api/client";
 import { settingsStore } from "@/stores/settings";
-import { fmtCoin, fmtPct, profitColor, fmtDate, parseDate } from "@/lib/format";
+import { fmtCoin, fmtPct, profitColor, fmtDate, parseDate, findTotalColumn } from "@/lib/format";
 import type { ProfitResponse, BalanceResponse, DailyRecord } from "@/api/types";
 
 const loading = ref(true);
@@ -49,7 +49,8 @@ async function loadWalletCurve() {
     if (!res || !res.data?.length || !walletEl.value) return;
     const cols: string[] = res.columns;
     const iDate = cols.indexOf("date");
-    const iTotal = cols.lastIndexOf("total");
+    // 期货返回 total_quote、现货/旧版返回 total（精确匹配 total 会漏掉前者）
+    const iTotal = findTotalColumn(cols);
     if (iDate < 0 || iTotal < 0) return;
     walletChart = walletChart ?? createChart(walletEl.value as HTMLElement, walletOpts());
     walletSeries =
