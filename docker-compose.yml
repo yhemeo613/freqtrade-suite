@@ -19,6 +19,15 @@ x-logging-base: &logging-base
     max-size: "20m"
     max-file: "3"
 
+x-network-hardening: &network-hardening
+  # 网络加固：公共 DNS 消除容器间歇性 DNS 失败；
+  # host.docker.internal 让容器可经宿主机代理访问交易所（需 config.json ccxt_config 配合）
+  dns:
+    - 223.5.5.5
+    - 8.8.8.8
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
 services:
   freqtrade:
     # 自定义镜像：基于固定 digest 的官方 stable 镜像补齐第三方策略依赖（ta/finta/scikit-optimize）
@@ -33,6 +42,7 @@ services:
     mem_limit: 2g
     cpus: 2.0
     logging: *logging-base
+    <<: *network-hardening
     volumes:
       # 源码只读挂载；可写面仅限 user_data（日志 / 数据库 / 回测结果）
       - ./frontend-server:/freqtrade:ro
@@ -59,6 +69,7 @@ services:
     mem_limit: 2g
     cpus: 1.0
     logging: *logging-base
+    <<: *network-hardening
     volumes:
       - ./frontend-server:/freqtrade:ro
       - ./frontend-server/user_data:/freqtrade/user_data
