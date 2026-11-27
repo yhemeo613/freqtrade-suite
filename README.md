@@ -219,7 +219,7 @@ docker compose up -d --build
 | `exchange.pair_whitelist` | 静态白名单：**40 个 USDT 永续（14 主流 + 26 山寨，山寨为主）**；`StaticPairList` 直接使用该列表 |
 | `pairlists` | 默认 **`StaticPairList`**（静态标的池，稳定、历史充足、可与回测一一对应）；想自动追踪成交量/新币时改用 `NewCoinWeightedVolumePairList`（见下节） |
 | `exchange.name` | 默认 `okx`，可替换为 freqtrade 支持的其他交易所 |
-| `exchange.ccxt_config` | REST 限流参数，默认 `{"enableRateLimit": true, "rateLimit": 200}`（遵守交易所请求频率） |
+| `exchange.ccxt_config` | REST 限流参数，默认 `{"enableRateLimit": true, "rateLimit": 200, "options": {"defaultType": "swap", "fetchMarkets": ["swap"]}}`（`fetchMarkets` 只加载 SWAP 市场，启动更快更稳；现货示例对应 `["spot"]`） |
 | `exchange.enable_ws` | WebSocket 开关（默认开启）；WS 订阅按交易所配额（OKX 480 次/小时）自动节流，超配额通道自动回退 REST |
 | `exchange_ws_sub_limit_per_hour` / `exchange_ws_max_channels` | WS 订阅配额与单连接频道上限（可选覆盖，默认 480 / 240，与 OKX 官方限制一致）；换交易所或调整策略周期数时按需调整，无需改代码 |
 | `exchange.key/secret/password` | 交易所凭据；模拟盘可留空，实盘必填 |

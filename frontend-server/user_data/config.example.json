@@ -47,7 +47,11 @@
     "password": "",
     "ccxt_config": {
       "enableRateLimit": true,
-      "rateLimit": 200
+      "rateLimit": 200,
+      "options": {
+        "defaultType": "swap",
+        "fetchMarkets": ["swap"]
+      }
     },
     "ccxt_async_config": {},
     "pair_whitelist": [
