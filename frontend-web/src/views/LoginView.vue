@@ -125,7 +125,10 @@ function confirmDelete() {
             <Card v-if="authStore.bots.length">
                 <CardHeader class="pb-3">
                     <CardTitle class="text-base">我的机器人</CardTitle>
-                    <CardDescription>点击卡片登录</CardDescription>
+                    <CardDescription
+                        >点击卡片登录 · 登录一次后 30
+                        天内自动登录，无需重复输入密码</CardDescription
+                    >
                 </CardHeader>
                 <CardContent class="space-y-2">
                     <div
