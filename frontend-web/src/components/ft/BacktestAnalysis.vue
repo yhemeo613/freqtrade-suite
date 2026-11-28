@@ -33,13 +33,15 @@ import {
     type Time
 } from "lightweight-charts";
 import { getClient } from "@/api/client";
-import { runApi } from "@/composables/useBotData";
+import { runApi, type Trade as TradeRecord } from "@/composables/useBotData";
 
 const props = defineProps<{
     filename: string;
     strategy: string;
     timeframe: string;
     pairs: string[];
+    /** 回测成交记录: 入场/出场标记的数据源(df 列不含出场原因,必须用成交记录) */
+    trades?: TradeRecord[];
 }>();
 
 /* ---------- pair history ---------- */
@@ -137,39 +139,48 @@ async function loadPairHistory() {
             close: r[idx("close")] as number
         })) as CandlestickData<Time>[]
     );
-    // 回测交易标记（来自数据列，若存在）
-    const iTag = cols.indexOf("enter_tag");
-    if (iTag >= 0) {
-        const markers: SeriesMarker<Time>[] = [];
-        for (const r of rows) {
-            if (r[iTag]) {
-                markers.push({
-                    time: ((parseDate(r[iDate])?.getTime() ?? 0) / 1000) as Time,
-                    position: "belowBar",
-                    shape: "arrowUp",
-                    color: "#38bdf8",
-                    text: `入场 ${r[iTag]}`
-                });
-            }
-            const iExit = cols.indexOf("exit_reason");
-            if (iExit >= 0 && r[iExit]) {
-                markers.push({
-                    time: ((parseDate(r[iDate])?.getTime() ?? 0) / 1000) as Time,
-                    position: "aboveBar",
-                    shape: "circle",
-                    color: "#f59e0b",
-                    text: `平仓 ${r[iExit]}`
-                });
-            }
-        }
-        if (candleSeries) {
-            if (markersApi) markersApi.setMarkers(markers);
-            else markersApi = createSeriesMarkers(candleSeries, markers);
-        }
-    }
+    // 回测成交标记：从成交记录构建(入场=蓝↑/橙↑,出场=●,盈亏着色)
+    // 注意: df 的 enter_tag 列只在信号 K 线有值,exit_reason 列在回测 DataFrame 中不存在,
+    // 出场标记必须来自成交记录(props.trades)
+    applyTradeMarkers();
     // 显示回测区间全部 K 线,而不是只显示右端一小段
     chart?.timeScale().fitContent();
 }
+
+/** 从成交记录构建当前币对的入场/出场标记 */
+function applyTradeMarkers() {
+    if (!candleSeries) return;
+    const tradeMarkers: SeriesMarker<Time>[] = [];
+    for (const t of props.trades ?? []) {
+        if (t.pair !== pair.value) continue;
+        const openTs = (parseDate(t.open_date)?.getTime() ?? 0) / 1000;
+        if (openTs) {
+            tradeMarkers.push({
+                time: openTs as Time,
+                position: "belowBar",
+                shape: "arrowUp",
+                color: t.is_short ? "#f59e0b" : "#38bdf8",
+                text: `入场 ${t.enter_tag ?? ""} ${t.leverage && t.leverage > 1 ? `${t.leverage}x` : ""}`.trim()
+            });
+        }
+        const closeTs = (parseDate(t.close_date)?.getTime() ?? 0) / 1000;
+        if (closeTs) {
+            tradeMarkers.push({
+                time: closeTs as Time,
+                position: "aboveBar",
+                shape: "circle",
+                color: (t.profit_ratio ?? 0) >= 0 ? "#22c55e" : "#ef4444",
+                text: `平仓 ${t.exit_reason ?? ""} ${(t.profit_ratio ?? 0) >= 0 ? "+" : ""}${((t.profit_ratio ?? 0) * 100).toFixed(2)}%`.trim()
+            });
+        }
+    }
+    tradeMarkers.sort((a, b) => (a.time as number) - (b.time as number));
+    if (markersApi) markersApi.setMarkers(tradeMarkers);
+    else markersApi = createSeriesMarkers(candleSeries, tradeMarkers);
+}
+
+// 成交记录更新或切换币对时,重建标记
+watch([() => props.trades, pair], () => applyTradeMarkers());
 
 function api_pairHistory(filename: string, strategy: string, pair: string, timeframe: string) {
     return getClient().post(
