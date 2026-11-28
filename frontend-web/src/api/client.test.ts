@@ -120,4 +120,67 @@ describe("BotApiClient", () => {
         const withBt = new BotApiClient({ ...BOT, backtestUrl: "http://127.0.0.1:8081/" });
         expect(withBt.btBaseUrl).toBe("http://127.0.0.1:8081");
     });
+
+    it("login 成功后持久化 refresh token，resume 用它免密恢复", async () => {
+        const { BotApiClient, getStoredRefreshToken } = await freshClient();
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(jsonResponse(200, { access_token: "a1", refresh_token: "r1" }))
+            .mockResolvedValueOnce(jsonResponse(200, { access_token: "a2" }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        const client = new BotApiClient(BOT);
+        await client.login();
+        // 登录成功 → refresh token 已持久化
+        expect(getStoredRefreshToken(BOT.botId)).toBe("r1");
+
+        // 模拟浏览器重启: 新实例无内存 token,凭持久化 refresh token 恢复
+        const { BotApiClient: FreshApi } = await freshClient();
+        const fresh = new FreshApi(BOT);
+        const resumed = await fresh.resume();
+        expect(resumed).toBe(true);
+        // resume 用存储的 refresh token 调 /token/refresh
+        expect(fetchMock.mock.calls[1][0]).toBe("http://127.0.0.1:8080/api/v1/token/refresh");
+        expect(fresh.wsToken).toBe("a2");
+    });
+
+    it("resume 失败(过期)时清除持久化 token 并返回 false", async () => {
+        const { BotApiClient, getStoredRefreshToken, storeRefreshToken } = await freshClient();
+        storeRefreshToken(BOT.botId, "expired-token");
+
+        const fetchMock = vi.fn().mockResolvedValue(jsonResponse(401, {}));
+        vi.stubGlobal("fetch", fetchMock);
+
+        const client = new BotApiClient(BOT);
+        const resumed = await client.resume();
+
+        expect(resumed).toBe(false);
+        expect(getStoredRefreshToken(BOT.botId)).toBeNull(); // 失效 token 已清除
+    });
+
+    it("logout 清除内存 token 与持久化 refresh token", async () => {
+        const { BotApiClient, getStoredRefreshToken } = await freshClient();
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValue(jsonResponse(200, { access_token: "a1", refresh_token: "r1" }));
+        vi.stubGlobal("fetch", fetchMock);
+
+        const client = new BotApiClient(BOT);
+        await client.login();
+        expect(getStoredRefreshToken(BOT.botId)).toBe("r1");
+
+        client.logout();
+        expect(client.wsToken).toBe("");
+        expect(getStoredRefreshToken(BOT.botId)).toBeNull();
+    });
+
+    it("无持久化 token 时 resume 直接返回 false(不发请求)", async () => {
+        const { BotApiClient } = await freshClient();
+        const fetchMock = vi.fn();
+        vi.stubGlobal("fetch", fetchMock);
+
+        const client = new BotApiClient(BOT);
+        expect(await client.resume()).toBe(false);
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
 });

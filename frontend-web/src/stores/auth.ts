@@ -1,5 +1,12 @@
 import { reactive } from "vue";
-import { BotApiClient, setActiveClient, type BotConfig } from "@/api/client";
+import {
+    BotApiClient,
+    clearStoredRefreshToken,
+    getStoredRefreshToken,
+    logoutActiveClient,
+    setActiveClient,
+    type BotConfig
+} from "@/api/client";
 import { stopAllWs } from "@/api/ws";
 
 const LS_BOTS = "ftzh.bots";
@@ -106,6 +113,7 @@ export function updateBot(bot: BotConfig) {
 }
 
 export function removeBot(botId: string) {
+    clearStoredRefreshToken(botId);
     saveBots(authStore.bots.filter((b) => b.botId !== botId));
     if (authStore.activeBotId === botId) {
         // 删除的是当前机器人时,必须同时断开客户端并登出,否则界面停留在"假登录"状态
@@ -122,7 +130,16 @@ export async function connectBot(botId: string): Promise<void> {
     // 切换机器人前停止旧 WebSocket，避免旧机器人的推送触发对新机器人的误刷新/误提示
     stopAllWs();
     const client = new BotApiClient(bot);
-    await client.login();
+    if (bot.password) {
+        // 有密码(本会话输入过) → 正常登录
+        await client.login();
+    } else if (getStoredRefreshToken(botId)) {
+        // 无密码但有持久化 refresh token(≤30 天) → 免密恢复会话
+        const ok = await client.resume();
+        if (!ok) throw new Error("登录已过期，请重新输入密码");
+    } else {
+        throw new Error("请输入密码登录");
+    }
     setActiveClient(client);
     authStore.activeBotId = botId;
     authStore.loggedIn = true;
@@ -131,13 +148,16 @@ export async function connectBot(botId: string): Promise<void> {
 
 export function disconnect() {
     stopAllWs();
+    // 断开时清除 active bot 的持久化 refresh token(用户主动登出 = 不再记住)
+    if (authStore.activeBotId) clearStoredRefreshToken(authStore.activeBotId);
+    logoutActiveClient();
     setActiveClient(null);
     authStore.loggedIn = false;
     authStore.activeBotId = null;
     localStorage.removeItem(LS_ACTIVE);
 }
 
-/** 启动时尝试恢复上次会话 */
+/** 启动时尝试恢复上次会话：优先持久化 refresh token 免密恢复，其次 sessionStorage 密码 */
 export async function restoreSession(): Promise<boolean> {
     if (!authStore.activeBotId) return false;
     try {
