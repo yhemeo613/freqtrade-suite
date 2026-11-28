@@ -372,6 +372,7 @@ onUnmounted(stopPoll);
                     :strategy="resultStrategy"
                     :timeframe="timeframe"
                     :pairs="analysisPairs"
+                    :trades="resultTrades"
                 />
                 <div
                     v-else
