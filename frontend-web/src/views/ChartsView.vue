@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick } from "vue";
-import { toast } from "vue-sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +34,7 @@ const pair = ref("");
 const timeframe = ref("5m");
 const whitelist = ref<string[]>([]);
 const loading = ref(false);
+const loadError = ref("");
 
 const chartEl = ref<HTMLElement | null>(null);
 let chart: IChartApi | null = null;
@@ -126,10 +126,14 @@ async function loadCandles() {
     if (!pair.value) return;
     const seq = ++reqSeq;
     loading.value = true;
+    loadError.value = "";
     const res = await runApi(() => api.pairCandles(pair.value, timeframe.value, 500));
     if (seq !== reqSeq) return; // 过期响应直接丢弃
     loading.value = false;
-    if (!res) return;
+    if (!res) {
+        loadError.value = "加载失败，请点击刷新重试";
+        return;
+    }
 
     const cols: string[] = res.columns;
     const rows = res.data as (string | number | null)[][];
@@ -139,8 +143,14 @@ async function loadCandles() {
     const iL = cols.indexOf("low");
     const iC = cols.indexOf("close");
     const iV = cols.indexOf("volume");
-    if (iDate < 0 || iO < 0) {
-        toast.error("K 线数据格式异常");
+    // 启动引导未完成时,后端可能返回缺 date 列的瞬态响应 —— 自动重试而不是永久空白
+    if (iDate < 0 || iO < 0 || !rows.length) {
+        loadError.value = "数据尚未就绪（服务启动中），将自动重试…";
+        if (seq === reqSeq) {
+            setTimeout(() => {
+                if (seq === reqSeq) void loadCandles();
+            }, 10000);
+        }
         return;
     }
 
@@ -387,7 +397,16 @@ watch(
                     {{ pair }} · {{ timeframe }} · 最近 500 根 K 线
                 </span>
             </div>
-            <div ref="chartEl" class="h-[480px] w-full" />
+            <div class="relative">
+                <div ref="chartEl" class="h-[480px] w-full" />
+                <div
+                    v-if="loadError"
+                    class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80"
+                >
+                    <p class="text-sm text-muted-foreground">{{ loadError }}</p>
+                    <Button variant="outline" size="sm" @click="loadCandles">立即重试</Button>
+                </div>
+            </div>
             <p class="text-xs text-muted-foreground">
                 图上标记：蓝↑ 多头开仓 / 橙↓ 空头开仓 / ● 平仓（绿=盈利 红=亏损）
             </p>
