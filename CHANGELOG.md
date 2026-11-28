@@ -2,6 +2,14 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。所有显著变更都会记录在此文件中。
 
+## [v1.3.8] - 2026-11-28
+
+### 修复
+
+- **OKX 数据链路网络加固（三链路分治）**：容器公共 DNS + `host.docker.internal` 代理通道（compose）；OKX REST 走宿主机代理（`ccxt_config.httpsProxy`）、WS 保持直连（实测 WS 走代理会把 1006 断连放大 70 倍）；Telegram 长轮询走宿主机代理（compose 环境变量，httpx 信任环境变量，`NO_PROXY` 保护健康检查）。加固前：WS 1006 1558 次/24h、K 线抓取失败 850 条/启动小时、Telegram 轮询错误每 3-4 分钟一次；加固后：持续窗口 0 错误
+- **消除 unwatch KeyError 与超时噪声**：ccxt 仅在收到首条 K 线后才建 `ohlcvs[symbol]` 缓存，对"从未收到数据"的标的取消订阅会触发 ccxt 内部 `KeyError` 堆栈 + 3 秒超时级联（实测 79 条/5 分钟）；现在缓存缺失时跳过无谓 unwatch，缓存清理延后到 unwatch 完成后（消除竞态）
+- **启动只加载 SWAP 市场（`fetchMarkets: ["swap"]`）**：此前启动要拉取 OKX 全部市场类型（SPOT 1250 条 / SWAP / FUTURES / OPTION 四次重请求），任一接口失败整个进程无法启动。实际只交易 USDT 永续，SPOT 与 OPTION 市场纯属累赘——砍掉后启动数据量减约 70%，且避开当前最不稳定的 OPTION 接口，启动成功率大幅提升。`config.example.json`（`["swap"]`）/ `config.spot.example.json`（`["spot"]`）/ README 同步
+
 ## [v1.3.7] - 2026-11-27
 
 ### 修复
@@ -370,6 +378,7 @@
 - 107 个组件从 `cn` 包迁移到本地 `@/lib/utils`，卸载 `cn` 依赖(#9)
 - Nginx gzip 压缩 + 静态资源 30 天缓存；Telegram 周期统计文案拼接修复
 
+[v1.3.8]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.3.8
 [v1.3.7]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.3.7
 [v1.3.6]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.3.6
 [v1.3.5]: https://github.com/yhemeo613/freqtrade-suite/releases/tag/v1.3.5

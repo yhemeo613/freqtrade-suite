@@ -349,6 +349,18 @@ class ExchangeWS:
             # Unsubscribing from a connection that's going away is pointless.
             logger.debug("Shutting down - skipping OHLCV unwatch for %s, %s", pair, timeframe)
             return
+        # 本地补丁：ccxt 仅在收到首条 K 线后才创建 ohlcvs[symbol]；该键缺失说明此订阅从未
+        # 收到数据（典型于启动引导期网络抖动）。此时向交易所发 unwatch 只会在
+        # handle_unsubscription_ohlcv 里触发 KeyError（ccxt 直接用 self.ohlcvs[symbol] 取值），
+        # 且白白消耗一次 API 调用——直接跳过。旧连接被对端关闭时，交易所侧订阅已随之清空，
+        # 不存在频道泄漏。
+        if pair not in self._ccxt_object.ohlcvs:
+            logger.debug(
+                "Skipping OHLCV unwatch for %s, %s - no cached data (subscription never delivered).",
+                pair,
+                timeframe,
+            )
+            return
         try:
             async with asyncio.timeout(3):
                 if self.exchange_has("unWatchOHLCVForSymbols"):
@@ -416,12 +428,23 @@ class ExchangeWS:
         finally:
             logger.info(f"{pair}, {timeframe}, {candle_type} - Task finished - {result}")
             if not self._stopping and hasattr(self, "_loop") and not self._loop.is_closed():
+                # 本地补丁：缓存清理延后到 unwatch 完成之后。原先在调度 unwatch 的同时立刻
+                # 删除 ccxt 的 ohlcvs 缓存，unwatch 的确认处理与清理存在竞态——缓存先行删除
+                # 会放大 ccxt handle_unsubscription_ohlcv 的 KeyError。
                 asyncio.run_coroutine_threadsafe(
-                    self._unwatch_ohlcv(pair, timeframe, candle_type), loop=self._loop
+                    self._unwatch_ohlcv_and_pop(pair, timeframe, candle_type), loop=self._loop
                 )
 
             with self._state_lock:
                 self._klines_scheduled.discard((pair, timeframe, candle_type))
+
+    async def _unwatch_ohlcv_and_pop(
+        self, pair: str, timeframe: str, candle_type: CandleType
+    ) -> None:
+        """unwatch 完成（或超时/失败）后再清理本地缓存，避免与 ccxt 内部处理竞态。"""
+        try:
+            await self._unwatch_ohlcv(pair, timeframe, candle_type)
+        finally:
             self._pop_history((pair, timeframe, candle_type))
 
     async def _continuously_async_watch_orderbook(self, pair: str) -> None:

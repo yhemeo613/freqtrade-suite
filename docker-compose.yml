@@ -19,6 +19,25 @@ x-logging-base: &logging-base
     max-size: "20m"
     max-file: "3"
 
+x-network-hardening: &network-hardening
+  # 网络加固：
+  # 1. 公共 DNS 消除容器间歇性 DNS 失败
+  # 2. host.docker.internal 让容器可经宿主机代理访问交易所（OKX 代理由 config.json
+  #    ccxt_config 的 httpsProxy 显式控制；ccxt 的 aiohttp trust_env 默认关闭，
+  #    环境变量不会影响 OKX 路径）
+  # 3. HTTPS_PROXY/NO_PROXY：python-telegram-bot 底层 httpx 默认信任环境变量，
+  #    api.telegram.org 长轮询走宿主机代理，消除直连链路的轮询错误风暴；
+  #    NO_PROXY 排除本机地址，保护容器健康检查（urllib 同样信任环境变量）
+  dns:
+    - 223.5.5.5
+    - 8.8.8.8
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  environment:
+    HTTPS_PROXY: "http://host.docker.internal:7890"
+    HTTP_PROXY: "http://host.docker.internal:7890"
+    NO_PROXY: "127.0.0.1,localhost,host.docker.internal"
+
 services:
   freqtrade:
     # 自定义镜像：基于固定 digest 的官方 stable 镜像补齐第三方策略依赖（ta/finta/scikit-optimize）
@@ -33,6 +52,7 @@ services:
     mem_limit: 2g
     cpus: 2.0
     logging: *logging-base
+    <<: *network-hardening
     volumes:
       # 源码只读挂载；可写面仅限 user_data（日志 / 数据库 / 回测结果）
       - ./frontend-server:/freqtrade:ro
@@ -59,6 +79,7 @@ services:
     mem_limit: 2g
     cpus: 1.0
     logging: *logging-base
+    <<: *network-hardening
     volumes:
       - ./frontend-server:/freqtrade:ro
       - ./frontend-server/user_data:/freqtrade/user_data
