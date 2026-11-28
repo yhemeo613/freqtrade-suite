@@ -122,7 +122,7 @@ async function loadPairs() {
     if (whitelist.value.length && !pair.value) pair.value = whitelist.value[0];
 }
 
-async function loadCandles() {
+async function loadCandles(retry = 0) {
     if (!pair.value) return;
     const seq = ++reqSeq;
     loading.value = true;
@@ -131,7 +131,19 @@ async function loadCandles() {
     if (seq !== reqSeq) return; // 过期响应直接丢弃
     loading.value = false;
     if (!res) {
-        loadError.value = "加载失败，请点击刷新重试";
+        // 网络中断(如代理回程断流): 自动重试 2 次(3s/6s),仍失败才显示手动重试
+        if (retry < 2) {
+            loadError.value = `网络波动，${retry === 0 ? 3 : 6} 秒后自动重试…(${retry + 1}/2)`;
+            const mySeq = seq;
+            setTimeout(
+                () => {
+                    if (mySeq === reqSeq) void loadCandles(retry + 1);
+                },
+                retry === 0 ? 3000 : 6000
+            );
+        } else {
+            loadError.value = "加载失败，请点击刷新重试";
+        }
         return;
     }
 
